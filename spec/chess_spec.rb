@@ -1,5 +1,7 @@
 require_relative "../lib/king"
 require_relative "../lib/bishop"
+require_relative "../lib/knight"
+
 describe King do
     it 'places in the appropriate starting position' do
         black = King.new('black')
@@ -89,6 +91,44 @@ describe Bishop do
                 expect(bishop.move(move)).to be true
                 expect(bishop.position).to eql(move)
                 bishop.position = [0,2]
+            end
+        end
+    end
+
+    describe Knight do
+        it 'places in the appropriate starting position' do
+            black1 = Knight.new('black')
+            expect(black1.position).to eql([0,1])
+    
+            black2 = Knight.new('black')
+            expect(black2.position).to eql([0,6])
+    
+            Knight.reset_count
+    
+            white1 = Knight.new('white')
+            expect(white1.position).to eql([7,1])
+    
+            white2 = Knight.new('white')
+            expect(white2.position).to eql([7,6])
+        end
+        
+        describe "#.move" do
+            it 'returns false for an invalid move' do
+                Knight.reset_count
+                knight = Knight.new('black')
+                expect(knight.move([2,1])).to be false
+                expect(knight.position).to eql([0,1])
+            end
+    
+            it 'changes the position and returns true for a valid move' do
+                Knight.reset_count
+                knight = Knight.new('black')
+                possible_moves = [[2,0], [2,2], [1,3]]
+                possible_moves.each do |move|
+                    expect(knight.move(move)).to be true
+                    expect(knight.position).to eql(move)
+                    knight.position = [0,1]
+                end
             end
         end
     end
