@@ -2,6 +2,7 @@ require_relative "../lib/king"
 require_relative "../lib/bishop"
 require_relative "../lib/knight"
 require_relative "../lib/pawn"
+require_relative "../lib/rook"
 
 describe King do
     it 'places in the appropriate starting position' do
@@ -210,10 +211,50 @@ describe Pawn do
             end
         end
     end
+end
+
+describe Rook do
+    it 'places in the appropriate starting position' do
+        black_rooks = []
+        2.times do |i|
+            black_rooks << Rook.new('black')
+            expect(black_rooks[-1].position).to eql([0,i*7])
+        end
+
+        Rook.reset_count
+
+        white_rooks = []
+        2.times do |i|
+            white_rooks << Rook.new('white')
+            expect(white_rooks[-1].position).to eql([7,i*7])
+        end
+    end
+
+    describe "#.move" do
+        it 'returns false for an invalid move' do
+            Rook.reset_count
+            rook = Rook.new('black')
+            expect(rook.move([2,2])).to be false
+            expect(rook.position).to eql([0,0])
+        end
+
+        it 'changes the position and returns true for a valid move' do
+            Rook.reset_count
+            rook = Rook.new('black')
+            possible_moves = [[0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7],
+                                [1,0], [2,0], [3,0], [4,0], [5,0], [6,0], [7,0]]  
+            possible_moves.each do |move|
+                expect(rook.move(move)).to be true
+                expect(rook.position).to eql(move)
+                rook.position = [0,0]
+            end
+        end
+    end
+end 
 
     
 
-end
+
 
 
 
