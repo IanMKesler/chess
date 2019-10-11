@@ -1,6 +1,7 @@
 require_relative "../lib/king"
 require_relative "../lib/bishop"
 require_relative "../lib/knight"
+require_relative "../lib/pawn"
 
 describe King do
     it 'places in the appropriate starting position' do
@@ -94,42 +95,126 @@ describe Bishop do
             end
         end
     end
+end
 
-    describe Knight do
-        it 'places in the appropriate starting position' do
-            black1 = Knight.new('black')
-            expect(black1.position).to eql([0,1])
+describe Knight do
+    it 'places in the appropriate starting position' do
+        black1 = Knight.new('black')
+        expect(black1.position).to eql([0,1])
     
-            black2 = Knight.new('black')
-            expect(black2.position).to eql([0,6])
+        black2 = Knight.new('black')
+        expect(black2.position).to eql([0,6])
     
-            Knight.reset_count
+        Knight.reset_count
     
-            white1 = Knight.new('white')
-            expect(white1.position).to eql([7,1])
+        white1 = Knight.new('white')
+        expect(white1.position).to eql([7,1])
     
-            white2 = Knight.new('white')
-            expect(white2.position).to eql([7,6])
-        end
+        white2 = Knight.new('white')
+        expect(white2.position).to eql([7,6])
+    end
         
-        describe "#.move" do
-            it 'returns false for an invalid move' do
-                Knight.reset_count
-                knight = Knight.new('black')
-                expect(knight.move([2,1])).to be false
-                expect(knight.position).to eql([0,1])
-            end
+    describe "#.move" do
+        it 'returns false for an invalid move' do
+            Knight.reset_count
+            knight = Knight.new('black')
+            expect(knight.move([2,1])).to be false
+            expect(knight.position).to eql([0,1])
+        end
     
-            it 'changes the position and returns true for a valid move' do
-                Knight.reset_count
-                knight = Knight.new('black')
-                possible_moves = [[2,0], [2,2], [1,3]]
-                possible_moves.each do |move|
-                    expect(knight.move(move)).to be true
-                    expect(knight.position).to eql(move)
-                    knight.position = [0,1]
-                end
+        it 'changes the position and returns true for a valid move' do
+            Knight.reset_count
+            knight = Knight.new('black')
+            possible_moves = [[2,0], [2,2], [1,3]]
+            possible_moves.each do |move|
+                expect(knight.move(move)).to be true
+                expect(knight.position).to eql(move)
+                knight.position = [0,1]
+            end
+        end
+     end
+end
+
+describe Pawn do
+    it 'places in the appropriate starting position' do
+        black_pawns = []
+        8.times do |i|
+            black_pawns << Pawn.new('black')
+            expect(black_pawns[-1].position).to eql([1,i])
+        end
+
+        Pawn.reset_count
+
+        white_pawns = []
+        8.times do |i|
+            white_pawns << Pawn.new('white')
+            expect(white_pawns[-1].position).to eql([6,i])
+        end
+    end
+
+    describe '#.move' do
+        it 'returns false for an invalid move' do
+            Pawn.reset_count
+            pawn = Pawn.new('black')
+            expect(pawn.move([3,3])).to be false
+            expect(pawn.position).to eql([1,0])
+        end
+
+        it 'returns true for valid moves' do
+            Pawn.reset_count
+            pawn1 = Pawn.new('black')
+            valid_positions = [[3,0], [2,0]]
+            valid_positions.each do |position|
+                expect(pawn1.move(position)).to be true
+                expect(pawn1.position).to eql(position)
+                pawn1.position = [1,0]
+            end
+
+            Pawn.reset_count
+            pawn2 = Pawn.new('white')
+            valid_positions = [[4,0], [5,0]]
+            valid_positions.each do |position|
+                expect(pawn2.move(position)).to be true
+                expect(pawn2.position).to eql(position)
+                pawn2.position = [6,0]
+            end
+        end
+
+    end
+
+    describe '#.take' do
+        it 'returns false for an invalid take' do
+            Pawn.reset_count
+            pawn = Pawn.new('black')
+            expect(pawn.take([3,3])).to be false
+            expect(pawn.position).to eql([1,0])
+        end
+
+        it 'returns true for valid takes' do
+            Pawn.reset_count
+            black_pawn = Pawn.new('black')
+            black_pawn.position = [1,1]
+            valid_takes = [[2,0], [2,2]]
+            valid_takes.each do |take|
+                expect(black_pawn.take(take)).to be true
+                expect(black_pawn.position).to eql(take)
+                black_pawn.position = [1,1]
+            end
+
+            white_pawn = Pawn.new('white') 
+            valid_takes = [[5,0], [5,2]]
+            valid_takes.each do |take|
+                expect(white_pawn.take(take)).to be true
+                expect(white_pawn.position).to eql(take)
+                white_pawn.position = [6,1]
             end
         end
     end
+
+    
+
 end
+
+
+
+
