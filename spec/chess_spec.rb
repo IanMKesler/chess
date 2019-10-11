@@ -3,6 +3,7 @@ require_relative "../lib/bishop"
 require_relative "../lib/knight"
 require_relative "../lib/pawn"
 require_relative "../lib/rook"
+require_relative "../lib/queen"
 
 describe King do
     it 'places in the appropriate starting position' do
@@ -247,6 +248,37 @@ describe Rook do
                 expect(rook.move(move)).to be true
                 expect(rook.position).to eql(move)
                 rook.position = [0,0]
+            end
+        end
+    end
+
+    describe Queen do
+        it 'places in the appropriate starting position' do
+            black = Queen.new('black')
+            expect(black.position).to eql([0,3])
+    
+            white = Queen.new('white')
+            expect(white.position).to eql([7,3])
+        end
+
+        describe "#.move" do
+            it 'returns false for an invalid move' do
+                queen = Queen.new('black')
+                expect(queen.move([2,2])).to be false
+                expect(queen.position).to eql([0,3])
+            end
+    
+            it 'changes the position and returns true for a valid move' do
+                queen = Queen.new('black')
+                queen.position = [3,5] #5,f
+                all_moves = [[2,5], [1,5], [0,5], [3,6], [3,7], [4,5], [5,5], [6,5], [7,5],
+                         [3,4], [3,3], [3,2], [3,1], [3,0], [2,4], [1,3], [0,2], [2,6],
+                         [1,7], [4,6], [5,7], [4,4], [5,3], [6,2], [7,1]]
+                all_moves.each do |move|
+                    expect(queen.move(move)).to be true
+                    expect(queen.position).to eql(move)
+                    queen.position = [3,5]
+                end         
             end
         end
     end
