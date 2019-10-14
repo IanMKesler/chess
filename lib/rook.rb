@@ -5,7 +5,7 @@ class Rook < Slider
 
     def initialize(color)
         super()
-        @sym = 'R'
+        @sym = color == 'black' ? "\u2656" : "\u265C"
         case @@count[self.class.to_s]
         when 1
             @position = color == 'black' ? [0,0] : [7,0]

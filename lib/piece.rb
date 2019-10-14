@@ -4,9 +4,13 @@ class Piece
                'Bishop' => 0,
                'Pawn' => 0}
     
+    attr_reader :sym, :color
+    
     def initialize
         @position = []
         @@count[self.class.to_s] += 1
+        @sym = nil
+        @color = nil
     end
 
     def move(position)

@@ -7,7 +7,7 @@ class Pawn < Piece
 
     def initialize(color)
         super()
-        @sym = 'P'
+        @sym = color == 'black' ? "\u2659" : "\u265F"
         @color = color
         count = @@count[self.class.to_s]
         @position = @color == 'black' ? [1,count-1] : [6,count-1]

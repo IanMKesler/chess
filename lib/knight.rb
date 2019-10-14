@@ -5,7 +5,7 @@ class Knight < Jumper
 
     def initialize(color)
         super()
-        @sym = 'N'
+        @sym = color == 'black' ? "\u2658" : "\u265E"
         count = @@count[self.class.to_s]
         if count == 1
             @position = color == 'black' ? [0, 1] : [7, 1]
