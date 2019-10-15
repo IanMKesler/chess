@@ -4,6 +4,18 @@ require_relative "../lib/knight"
 require_relative "../lib/pawn"
 require_relative "../lib/rook"
 require_relative "../lib/queen"
+require_relative "../lib/piece"
+
+describe Piece do
+    piece = Piece.new
+    describe '#.move' do
+        it 'moves the piece and marks as moved' do
+            piece.move([3,3])
+            expect(piece.position).to eql([3,3])
+            expect(piece.moved).to be true
+        end      
+    end
+end
 
 describe King do
     it 'places in the appropriate starting position' do
@@ -14,23 +26,12 @@ describe King do
         expect(white.position).to eql([7,4])
     end
 
-    describe "#.move" do
-        it 'returns false for an invalid move' do
-            king = King.new('black')
-            expect(king.move([2,2])).to be false
-            expect(king.position).to eql([0,4])
-        end
-
-        it 'changes the position and returns true for a valid move' do
+    describe "#.valid_moves" do
+        it 'returns an array of valid moves from current position' do
             king = King.new('black')
             king.position = [3,5]
-            MOVES = [[-1,-1], [-1,0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
-            all_moves = MOVES.map { |move| [move,king.position].transpose.map { |x| x.reduce(:+)}}
-            all_moves.each do |move|
-                expect(king.move(move)).to be true
-                expect(king.position).to eql(move)
-                king.position = [3,5]
-            end         
+            moves = [[2,4], [2,5], [2,6], [3,4], [3,6], [4,4], [4,5], [4,6]]
+            expect(king.valid_moves).to eql(moves)
         end
     end
 end
@@ -54,47 +55,11 @@ describe Bishop do
         Bishop.reset_count
     end
 
-    describe '#.construct_moves' do
+    describe '#.valid_moves' do
         it 'constructs all possible moves' do
             bishop = Bishop.new('black')
-            possible_moves = [[1,3], [2,4], [3,5], [4,6] ,[5,7], [1,1], [2,0]]
-            expect(bishop.send(:construct_moves)).to eql(possible_moves)
-        end
-    end
-
-    describe '#.valid_move?' do
-        it 'returns true for a valid move' do
-            Bishop.reset_count
-            bishop = Bishop.new('black')
-            possible_moves = [[1,3], [2,4], [3,5], [4,6] ,[5,7], [1,1], [2,0]]
-            possible_moves.each do |move|
-                expect(bishop.send(:valid_move?, move)).to be true
-            end
-        end
-
-        it 'returns false for an invalid move' do
-            bishop = Bishop.new('black')
-            expect(bishop.send(:valid_move?, [0,0])).to be false
-        end
-    end
-
-    describe "#.move" do
-        it 'returns false for an invalid move' do
-            Bishop.reset_count
-            bishop = Bishop.new('black')
-            expect(bishop.move([2,2])).to be false
-            expect(bishop.position).to eql([0,2])
-        end
-
-        it 'changes the position and returns true for a valid move' do
-            Bishop.reset_count
-            bishop = Bishop.new('black')
-            possible_moves = [[1,3], [2,4], [3,5], [4,6] ,[5,7], [1,1], [2,0]]
-            possible_moves.each do |move|
-                expect(bishop.move(move)).to be true
-                expect(bishop.position).to eql(move)
-                bishop.position = [0,2]
-            end
+            possible_moves = [[], [], [[1,3], [2,4], [3,5], [4,6] ,[5,7]], [[1,1], [2,0]]]
+            expect(bishop.valid_moves).to eql(possible_moves)
         end
     end
 end
@@ -116,25 +81,14 @@ describe Knight do
         expect(white2.position).to eql([7,6])
     end
         
-    describe "#.move" do
-        it 'returns false for an invalid move' do
+    describe '#.valid_moves' do
+        it 'returns an array of possible moves' do
             Knight.reset_count
             knight = Knight.new('black')
-            expect(knight.move([2,1])).to be false
-            expect(knight.position).to eql([0,1])
+            possible_moves = [[2,2], [2,0], [1,3]]
+            expect(knight.valid_moves).to eql(possible_moves)
         end
-    
-        it 'changes the position and returns true for a valid move' do
-            Knight.reset_count
-            knight = Knight.new('black')
-            possible_moves = [[2,0], [2,2], [1,3]]
-            possible_moves.each do |move|
-                expect(knight.move(move)).to be true
-                expect(knight.position).to eql(move)
-                knight.position = [0,1]
-            end
-        end
-     end
+    end
 end
 
 describe Pawn do
@@ -154,62 +108,32 @@ describe Pawn do
         end
     end
 
-    describe '#.move' do
-        it 'returns false for an invalid move' do
-            Pawn.reset_count
-            pawn = Pawn.new('black')
-            expect(pawn.move([3,3])).to be false
-            expect(pawn.position).to eql([1,0])
-        end
-
-        it 'returns true for valid moves' do
+    describe '#.valid_moves' do
+        it 'returns an array of valid moves' do
             Pawn.reset_count
             pawn1 = Pawn.new('black')
-            valid_positions = [[3,0], [2,0]]
-            valid_positions.each do |position|
-                expect(pawn1.move(position)).to be true
-                expect(pawn1.position).to eql(position)
-                pawn1.position = [1,0]
-            end
+            valid_moves = [[2,0], [3,0]]
+            expect(pawn1.valid_moves).to eql(valid_moves)
 
             Pawn.reset_count
             pawn2 = Pawn.new('white')
-            valid_positions = [[4,0], [5,0]]
-            valid_positions.each do |position|
-                expect(pawn2.move(position)).to be true
-                expect(pawn2.position).to eql(position)
-                pawn2.position = [6,0]
-            end
+            valid_moves = [[5,0], [4,0]]
+            expect(pawn2.valid_moves).to eql(valid_moves)
         end
 
     end
 
-    describe '#.take' do
-        it 'returns false for an invalid take' do
-            Pawn.reset_count
-            pawn = Pawn.new('black')
-            expect(pawn.take([3,3])).to be false
-            expect(pawn.position).to eql([1,0])
-        end
-
+    describe '#.valid_takes' do
         it 'returns true for valid takes' do
             Pawn.reset_count
             black_pawn = Pawn.new('black')
             black_pawn.position = [1,1]
             valid_takes = [[2,0], [2,2]]
-            valid_takes.each do |take|
-                expect(black_pawn.take(take)).to be true
-                expect(black_pawn.position).to eql(take)
-                black_pawn.position = [1,1]
-            end
+            expect(black_pawn.valid_takes).to eql(valid_takes)
 
             white_pawn = Pawn.new('white') 
             valid_takes = [[5,0], [5,2]]
-            valid_takes.each do |take|
-                expect(white_pawn.take(take)).to be true
-                expect(white_pawn.position).to eql(take)
-                white_pawn.position = [6,1]
-            end
+            expect(white_pawn.valid_takes).to eql(valid_takes)
         end
     end
 end
@@ -231,24 +155,13 @@ describe Rook do
         end
     end
 
-    describe "#.move" do
-        it 'returns false for an invalid move' do
+    describe '#.valid_moves' do
+        it 'returns an array of valid moves' do
             Rook.reset_count
             rook = Rook.new('black')
-            expect(rook.move([2,2])).to be false
-            expect(rook.position).to eql([0,0])
-        end
-
-        it 'changes the position and returns true for a valid move' do
-            Rook.reset_count
-            rook = Rook.new('black')
-            possible_moves = [[0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7],
-                                [1,0], [2,0], [3,0], [4,0], [5,0], [6,0], [7,0]]  
-            possible_moves.each do |move|
-                expect(rook.move(move)).to be true
-                expect(rook.position).to eql(move)
-                rook.position = [0,0]
-            end
+            possible_moves = [[],[[0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7]],
+                              [[1,0], [2,0], [3,0], [4,0], [5,0], [6,0], [7,0]], []]
+            expect(rook.valid_moves).to eql(possible_moves)
         end
     end
 end
@@ -262,24 +175,15 @@ describe Queen do
         expect(white.position).to eql([7,3])
     end
 
-    describe "#.move" do
-        it 'returns false for an invalid move' do
+    describe "#.valid_moves" do
+        it 'returns an array of valid moves' do
             queen = Queen.new('black')
-            expect(queen.move([2,2])).to be false
-            expect(queen.position).to eql([0,3])
-        end
-
-        it 'changes the position and returns true for a valid move' do
-            queen = Queen.new('black')
-            queen.position = [3,5] #5,f
-            all_moves = [[2,5], [1,5], [0,5], [3,6], [3,7], [4,5], [5,5], [6,5], [7,5],
-                        [3,4], [3,3], [3,2], [3,1], [3,0], [2,4], [1,3], [0,2], [2,6],
-                        [1,7], [4,6], [5,7], [4,4], [5,3], [6,2], [7,1]]
-            all_moves.each do |move|
-                expect(queen.move(move)).to be true
-                expect(queen.position).to eql(move)
-                queen.position = [3,5]
-            end         
+            possible_moves = [[], [[0,4], [0,5], [0,6], [0,7]], 
+                              [[1,3], [2,3], [3,3], [4,3], [5,3], [6,3], [7,3]],
+                              [[0,2], [0,1], [0,0]], [], [],
+                              [[1,4], [2,5], [3,6], [4,7]],
+                              [[1,2], [2,1], [3,0]]]
+            expect(queen.valid_moves).to eql(possible_moves)
         end
     end
 end

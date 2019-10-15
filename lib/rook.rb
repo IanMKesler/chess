@@ -4,7 +4,7 @@ class Rook < Slider
     attr_accessor :position #for testing
 
     def initialize(color)
-        super()
+        super(color)
         @sym = color == 'black' ? "\u2656" : "\u265C"
         case @@count[self.class.to_s]
         when 1

@@ -4,7 +4,7 @@ class Knight < Jumper
     attr_accessor :position #for testing
 
     def initialize(color)
-        super()
+        super(color)
         @sym = color == 'black' ? "\u2658" : "\u265E"
         count = @@count[self.class.to_s]
         if count == 1

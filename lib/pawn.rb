@@ -6,25 +6,13 @@ class Pawn < Piece
     attr_accessor :position, :moved #for testing
 
     def initialize(color)
-        super()
+        super(color)
         @sym = color == 'black' ? "\u2659" : "\u265F"
-        @color = color
         count = @@count[self.class.to_s]
         @position = @color == 'black' ? [1,count-1] : [6,count-1]
-        @moved = false
     end
 
-    def take(position)
-        if valid_take?(position)
-            @position = position
-            @moved = true
-            return true
-        else
-            return false
-        end
-    end
-
-    def valid_move?(position)
+    def valid_moves
         case @color
         when 'black'
             moves = [@@MOVES[0]]
@@ -33,16 +21,17 @@ class Pawn < Piece
             moves = [@@MOVES[1]]
             moves += [[-2,0]] unless @moved
         end
-        moves.map { |move| [move,@position].transpose.map { |x| x.reduce(:+)}}.include?(position)
+        possible_moves = moves.map { |move| [move,@position].transpose.map { |x| x.reduce(:+)}}
+        valid_moves = possible_moves.select { |move| (move[0] >=0 && move[0] <= 7) && (move[1] >=0 && move[1] <= 7)}
     end
 
-    def valid_take?(position)
+    def valid_takes
         case @color
         when 'black'
             takes = @@TAKES[0..1]
         when 'white'
             takes = @@TAKES[2..3]
         end
-        takes.map { |take| [take,@position].transpose.map { |x| x.reduce(:+)}}.include?(position)
+        takes.map { |take| [take,@position].transpose.map { |x| x.reduce(:+)}}
     end
 end
