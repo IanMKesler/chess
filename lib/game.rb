@@ -16,13 +16,45 @@ class Game
     def round
         board.show
         piece = get_piece
-        move = get_move
-        piece.position = move
+        new_position = get_move(piece)
+        #flesh out
+        piece.move(new_position)
         set_board
         switch_players
     end
 
     private 
+
+    def valid_move?(piece, position)
+        type = piece.class.superclass.name
+        case type
+        when "Slider"
+            lane = piece.valid_moves.select { |lane| lane.include?(position)}.flatten(1)
+            lane.each_with_index do |position, index|
+                if @board.field[position[0]][position[1]]
+                    lane = lane[0...index]
+                    break
+                end
+            end
+            return lane.include?(position) ? true : false
+        else 
+            return piece.valid_moves.include?(position) ? true : false
+        end
+    end
+
+    def find_king(player)
+        player.pieces.select { |piece| piece.class.name == "King"}[0]
+    end
+
+    def get_move(piece)
+        puts "Move #{@active_player.color} #{piece.class.to_s} to:"
+        input = format(gets.strip)
+        until valid_move?(input, piece)
+            puts "Not a valid move for that piece, try again"
+            input = format(gets.strip)
+        end
+        input
+    end
 
     def set_board
         @player1.pieces.each do |piece|
@@ -67,9 +99,5 @@ class Game
         end
         output = [7-(row[0].to_i-1),board.column_reference.key(column[0])]
         output
-    end
-
-    def valid_input?(input)
-
     end
 end
