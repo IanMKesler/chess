@@ -44,10 +44,18 @@ describe Game do
         end
     end
 
-    describe '#.find_king' do
+    describe '#.find_pieces' do
         it 'returns the king of the given player' do
-            expect(game.send(:find_king, game.player1).position).to eql([7,4])
-            expect(game.send(:find_king, game.player2).position).to eql([0,4])
+            expect(game.send(:find_pieces, game.player1, "King")[0].position).to eql([7,4])
+            expect(game.send(:find_pieces, game.player2, "King")[0].position).to eql([0,4])
+        end
+
+        it 'returns an array of pawns' do
+            pawns = game.send(:find_pieces, game.player1, "Pawn")
+            pawns.each_with_index do |pawn, index|
+                expect(pawn.class.name).to eql("Pawn")
+                expect(pawn.position).to eql([6,index])
+            end
         end
     end
 
@@ -58,13 +66,9 @@ describe Game do
         end
 
         it 'returns true for a valid move for slider' do
-            game.active_player.pieces[6].position = [5,1]
-            game.board.field[6][0] = nil
-            game.send(:set_board)
+            game.send(:move, game.active_player.pieces[6], [6,0], [5,1])
             expect(game.send(:valid_move?, game.active_player.pieces[0], [2,0])).to be true
-            game.active_player.pieces[6].position = [6,0]
-            game.board.field[5][1] = nil
-            game.send(:set_board)
+            game.send(:move, game.active_player.pieces[6], [5,1], [6,0])
         end 
 
         it 'returns false if not in piece.valid_moves' do
@@ -73,6 +77,24 @@ describe Game do
 
         it 'returns false for a blocked slider' do
             expect(game.send(:valid_move?, game.active_player.pieces[0], [5,0])).to be false
+        end
+    end
+
+    describe "#.check?" do
+        it 'returns false if active_player is safe' do
+            expect(game.send(:check?)).to be false
+        end
+
+        it 'returns true if active_player king is threatened by pawn' do
+            game.send(:move, game.inactive_player.pieces[6], [1,0], [6,3])
+            expect(game.send(:check?)).to be true
+        end
+
+        it 'returns true if active_player king is threatened by rook' do
+            game.send(:move, game.inactive_player.pieces[6], [6,3], [1,0])
+            game.send(:move, game.active_player.pieces[10], [6,4], [5,0])
+            game.send(:move, game.inactive_player.pieces[0], [0,0], [2,4])
+            expect(game.send(:check?)).to be true
         end
     end
 end
