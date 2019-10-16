@@ -8,57 +8,106 @@ class Game
         @player1 = Player.new('white')
         @player2 = Player.new('black')
         @board = Board.new
+        @board_save = nil
+        @player_saves = nil
         set_board
         @active_player = @player1
         @inactive_player = @player2
     end
 
-    def round
-        @active_player.check = check?
-        checkmate? if @active_player.check
-        if @active_player.checkmate || stalemate
-            return true
+    def round 
+        legal_moves = construct_legal_moves
+        if legal_moves.empty?
+            return false
         end
-        board.show
-        puts "Check!" if @active_player.check
         piece = get_piece
-        old_position = piece.position
-        new_position = get_move(piece)
-        taken_piece = @board.field[new_position[0]][new_position[1]]
-        move(piece, old_position, new_position)
-        while @active_player.check
-            puts "Your king is still in check! Try another move."
-            move(piece, new_position, old_position)
+        move = get_move(piece)
+        until legal_moves[piece].include?(move)
+            puts "That's an invalid move! Try again."
             piece = get_piece
-            old_position = piece.position
-            new_position = get_move(piece)
-            @active_player.check = check?
+            move = get_move(piece)
         end
-        switch_players
+        move(piece, move)
+        @active_player, @inactive_player = @inactive_player, @active_player
+        return true
     end
 
     private 
 
-    def checkmate?
+    def construct_legal_moves
+        legal_moves = {}
+        @active_player.pieces.each do |piece|
+            legal_moves[piece.class.name] = piece.valid_moves
+        end
         
     end
 
+    def save_state
+        board = Marshal.load(Marshal.dump(@board))
+        player1 = Marshal.load(Marshal.dump(@player1))
+        player2 = Marshal.load(Marshal.dump(@player2))
+        @state = [board, player1, player2]
+    end
+
+    def load_state
+        @board = @state[0]
+        @player1 = @state[1]
+        @player2 = @state[2]
+    end
+
+    def checkmate?
+        safe_moves = []
+        @active_player.pieces.each do |piece|
+            moves = piece.valid_moves.select { |move|
+                valid_move?(piece,move)
+            }
+            moves.select! { |space| 
+                move(piece,space)
+                safe = !check?
+                load_state
+                safe
+            }
+
+            if piece.class.name == 'Pawn'
+                takes = piece.valid_takes.select { |take|
+                valid_take?(piece, take)
+                }
+                
+                takes.select! { |space|
+                    move(piece, space)
+                    safe = !check?
+                    load_state
+                    safe
+                }
+            end
+
+            safe_moves += moves
+            safe_moves += takes if takes
+
+            safe_moves.empty? ? true : false
+
+        end
+
+    end
+
     def check?
-        king = find_pieces(@active_player, "King")[0]
-        pawns = find_pieces(@inactive_player, "Pawn")
+        king = @active_player.find_pieces("King")
+        pawns = @inactive_player.find_pieces("Pawn")
         others = @inactive_player.pieces - pawns
         threats = others.select { |piece| valid_move?(piece, king.position)}
         threats += pawns.select { |piece| valid_take?(piece, king.position)}
-        threats.length > 0 ? true : false
+        threats.empty? ? false : true
     end
 
-    def move(piece, old_position, new_position)
+    def move(piece, new_position)
+        old_position = piece.position
         taken_piece = @board.field[new_position[0]][new_position[1]]
         @board.field[new_position[0]][new_position[1]] = piece
         @board.field[old_position[0]][old_position[1]] = nil
         piece.move(new_position)
-        if @taken_piece
-            case @taken_piece.color
+        taken_piece.moved = true if taken_piece
+        if taken_piece
+            case taken_piece.color
             when 'white'
                 @player1.taken << @player1.pieces.delete(taken_piece)
             when 'black'
@@ -91,12 +140,16 @@ class Game
             end
             return lane.include?(position) ? true : false
         else 
-            return piece.valid_moves.include?(position) ? true : false
+            moves = piece.valid_moves.select { |space|
+                valid = true
+                occupant = @board.field[space[0]][space[1]]
+                if occupant && occupant.color == piece.color
+                    valid = false
+                end
+                valid
+            }
+            return moves.include?(position) ? true : false
         end
-    end
-
-    def find_pieces(player, piece_name)
-        player.pieces.select { |piece| piece.class.name == piece_name}
     end
 
     def get_move(piece)
