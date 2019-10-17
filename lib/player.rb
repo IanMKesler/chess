@@ -35,6 +35,11 @@ class Player
         pieces.length > 1 ? pieces : pieces[0]
     end
 
+    def find_piece(position)
+        output = @pieces.select { |piece| piece.position == position}
+        output[0]
+    end
+
     private
 
     def reset_counts
