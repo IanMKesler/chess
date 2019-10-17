@@ -1,11 +1,10 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        allow($stdout).to receive(:write)
+        #allow($stdout).to receive(:write)
     end
 
     game = Game.new
-    game.send(:save_state)
 
     describe "#.format" do
         it 'returns an array for a valid input' do
@@ -69,7 +68,7 @@ describe Game do
         it 'returns true for a valid move for slider' do
             game.send(:move, game.active_player.pieces[6],[5,1])
             expect(game.send(:valid_move?, game.active_player.pieces[0], [2,0])).to be true
-            game.send(:load_state)
+            game.send(:unmove, game.active_player.pieces[6])
         end 
 
         it 'returns false if not in piece.valid_moves' do
@@ -86,17 +85,41 @@ describe Game do
             expect(game.send(:check?)).to be false
         end
 
+
         it 'returns true if active_player king is threatened by pawn' do
             game.send(:move, game.inactive_player.pieces[6],[6,3])
             expect(game.send(:check?)).to be true
-            game.send(:load_state)
+            game.send(:unmove, game.inactive_player.pieces[6])   
+                     
         end
 
         it 'returns true if active_player king is threatened by rook' do
-            game.send(:move, game.active_player.pieces[10], [5,0])
-            game.send(:move, game.inactive_player.pieces[0],[2,4])
+            pawn = game.active_player.find_piece([6,4])
+            game.send(:move, pawn, [5,0])
+            rook = game.inactive_player.find_piece([0,0])
+            game.send(:move, rook,[2,4])
             expect(game.send(:check?)).to be true
-            game.send(:load_state)
+            game.send(:unmove, rook)
+            game.send(:unmove, pawn)            
+        end
+    end
+    
+    describe '#.modified_lane' do
+        it 'returns a shortened lane if blocked' do
+            #lane = game.player1.pieces[0].valid_moves[0]
+            lane = game.player1.find_piece([7,0]).valid_moves[0]
+            expect(game.send(:modified_lane, game.player1.color,lane)).to eql([])
+
+            pawn1 = game.player1.find_piece([6,0])
+            pawn2 = game.player2.find_piece([1,0])
+            game.send(:move, pawn1, [5,1])
+            game.send(:move, pawn2, [5,2])
+            game.board.show
+            valid = [[6,0], [5,0], [4,0], [3,0], [2,0], [1,0], [0,0]]
+            expect(game.send(:modified_lane, game.player1.color, lane)).to eql (valid)
+            game.send(:unmove, pawn2)
+            game.send(:unmove, pawn1)
+            game.board.show
         end
     end
 end

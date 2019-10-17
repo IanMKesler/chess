@@ -1,5 +1,6 @@
 require_relative "./player"
 require_relative "./board"
+require 'yaml'
 
 class Game
     attr_accessor :player1, :player2, :board, :active_player, :inactive_player
@@ -8,11 +9,10 @@ class Game
         @player1 = Player.new('white')
         @player2 = Player.new('black')
         @board = Board.new
-        @board_save = nil
-        @player_saves = nil
         set_board
         @active_player = @player1
         @inactive_player = @player2
+        @state = []
     end
 
     def round
@@ -80,28 +80,6 @@ class Game
         lane
     end
 
-    def save_state
-        board = Marshal.load(Marshal.dump(@board))
-        active_player = Marshal.load(Marshal.dump(@active_player))
-        inactive_player = Marshal.load(Marshal.dump(@inactive_player))
-        @state = [board, active_player, inactive_player]
-    end
-
-    def load_state
-        @board = @state[0]
-        @active_player = @state[1]
-        @inactive_player = @state[2]
-        active_color = @active_player.color
-        inactive_color = @inactive_player.color
-        if active_color == 'white'
-            @player1 = @state[1]
-            @player2 = @state[2]
-        else
-            @player1 = @state[2]
-            @player2 = @state[1]
-        end
-    end
-
     def checkmate?
         safe_moves = []
         @active_player.pieces.each do |piece|
@@ -146,17 +124,59 @@ class Game
         threats.empty? ? false : true
     end
 
+    def unmove(post_move_piece)
+        state = @state.select { |state| state[2] == post_move_piece}.flatten
+        return false if state.empty?
+        pre_move_piece = state[0]
+        taken_piece = state[1]
+
+        if taken_piece
+            case taken_piece.color
+            when 'white'
+                @player1.taken[-1].moved = taken_piece.moved
+                @player1.pieces << @player1.taken.pop
+            when 'black'
+                @player2.taken[-1].moved = taken_piece.moved
+                @player2.pieces << @player1.taken.pop
+            end
+        end
+
+        post_position = post_move_piece.position
+        @board.field[post_position[0]][post_position[1]] = nil
+
+        case post_move_piece.color
+        when 'white'
+            index = @player1.pieces.index(post_move_piece)
+            piece = @player1.pieces[index]
+            piece.position = pre_move_piece.position
+            piece.moved = pre_move_piece.moved
+        when 'black'
+            index = @player2.pieces.index(post_move_piece)
+            piece = @player2.pieces[index]
+            piece.position = pre_move_piece.position
+            piece.moved = pre_move_piece.moved
+        end
+
+        set_board 
+        @state.delete(state)
+    end
+
     def move(piece, new_position)
         old_position = piece.position
+        state = [piece.dup]
         taken_piece = @board.field[new_position[0]][new_position[1]]
-        #@board.field[new_position[0]][new_position[1]] = piece
+        state << taken_piece.dup
+        @state << state
         @board.field[old_position[0]][old_position[1]] = nil
         piece.move(new_position)
+        state << piece
         taken_piece.moved = true if taken_piece
         if taken_piece
             case taken_piece.color
             when 'white'
-                @player1.taken << @player1.pieces.delete(taken_piece)
+                @player1.taken << taken_piece
+                puts @player1.pieces.include?(taken_piece)
+                @player1.pieces.delete(taken_piece)
             when 'black'
                 @player2.taken << @player2.pieces.delete(taken_piece)
             end
