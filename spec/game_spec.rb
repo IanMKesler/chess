@@ -153,7 +153,44 @@ describe Game do
                 expect(legal_moves[piece]).to eql(moves)
             end
         end
+    end
 
+    describe '#.add_pawn_takes' do
+        it 'adds valid pawn takes' do
+            pawns = game.active_player.find_pieces("Pawn")
+            pawns.each_with_index do |pawn, index|
+                game.send(:move, pawn, [2,index])
+            end
+            legal_moves = {}
+            game.active_player.pieces.each do |piece|
+                legal_moves[piece] = piece.valid_moves
+            end
 
+            legal_moves = game.send(:remove_blocks,legal_moves)
+            legal_moves = game.send(:add_pawn_takes, legal_moves)
+            expected_moves = {
+                game.active_player.find_piece([7,0]) => [[6,0], [5,0], [4,0], [3,0]],
+                game.active_player.find_piece([7,7]) => [[6,7], [5,7], [4,7], [3,7]],
+                game.active_player.find_piece([7,1]) => [[6,3], [5,2], [5,0]],
+                game.active_player.find_piece([7,6]) => [[6,4], [5,7], [5,5]],
+                game.active_player.find_piece([7,2]) => [[6,1], [5,0], [6,3], [5,4], [4,5], [3,6]],
+                game.active_player.find_piece([7,5]) => [[6,4], [5,3], [4,2], [3,1], [6,6], [5,7]],
+                game.active_player.find_piece([7,3]) => [[6,3], [5,3], [4,3], [3,3], [6,2], [5,1], [4,0],
+                                                         [6,4], [5,5], [4,6], [3,7]],
+                game.active_player.find_piece([7,4]) => [[6,3], [6,4], [6,5]],
+                game.active_player.find_piece([2,0]) => [[1,1]],
+                game.active_player.find_piece([2,1]) => [[1,0], [1,2]],
+                game.active_player.find_piece([2,2]) => [[1,1], [1,3]],
+                game.active_player.find_piece([2,3]) => [[1,2], [1,4]],
+                game.active_player.find_piece([2,4]) => [[1,3], [1,5]],
+                game.active_player.find_piece([2,5]) => [[1,4], [1,6]],
+                game.active_player.find_piece([2,6]) => [[1,5], [1,7]],
+                game.active_player.find_piece([2,7]) => [[1,6]]
+            }
+
+            expected_moves.each do |piece, moves|
+                expect(legal_moves[piece]).to eql(moves)
+            end
+        end
     end
 end

@@ -42,17 +42,23 @@ class Game
         end
 
         legal_moves = remove_blocks(legal_moves)
-    
-        #Pawn Takes
+        legal_moves = add_pawn_takes(legal_moves)
+        
+    end
+
+    def add_pawn_takes(legal_moves)
         pawns = legal_moves.select { |piece, moves|
             piece.class.name == "Pawn"
         }
-
         pawns.each do |pawn, moves|
-
+            pawn.valid_takes.each do |take|
+                opponent = @board.field[take[0]][take[1]]
+                if opponent && opponent.color != pawn.color
+                    legal_moves[pawn] << take
+                end
+            end
         end
-
-
+        legal_moves
     end
 
     def remove_blocks(legal_moves)
@@ -63,9 +69,15 @@ class Game
                 moves.map! do |lane|
                     modified_lane(piece.color, lane)
                 end
-                legal_moves[piece] = moves.flatten(1)                
+                legal_moves[piece] = moves.flatten(1)
+            when "Piece"
+                moves.select! { |space|
+                    valid = @board.field[space[0]][space[1]] ? false : true
+                    valid
+                }
+                legal_moves[piece] = moves
             else 
-                moves = piece.valid_moves.select { |space|
+                moves.select! { |space|
                     valid = true
                     occupant = @board.field[space[0]][space[1]]
                     if occupant && occupant.color == piece.color

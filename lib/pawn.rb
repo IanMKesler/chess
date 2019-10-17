@@ -32,6 +32,7 @@ class Pawn < Piece
         when 'white'
             takes = @@TAKES[2..3]
         end
-        takes.map { |take| [take,@position].transpose.map { |x| x.reduce(:+)}}
+        possible_takes = takes.map { |take| [take,@position].transpose.map { |x| x.reduce(:+)}}
+        valid_takes = possible_takes.select { |move| (move[0] >=0 && move[0] <= 7) && (move[1] >=0 && move[1] <= 7)}
     end
 end
