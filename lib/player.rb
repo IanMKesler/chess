@@ -30,6 +30,11 @@ class Player
         @taken = []
     end
 
+    def find_pieces(piece_name)
+        pieces = @pieces.select { |piece| piece.class.name == piece_name}
+        pieces.length > 1 ? pieces : pieces[0]
+    end
+
     private
 
     def reset_counts

@@ -15,7 +15,8 @@ class Game
         @inactive_player = @player2
     end
 
-    def round 
+    def round
+        @active_player.check = check? 
         legal_moves = construct_legal_moves
         if legal_moves.empty?
             return false
@@ -39,20 +40,66 @@ class Game
         @active_player.pieces.each do |piece|
             legal_moves[piece.class.name] = piece.valid_moves
         end
-        
+
+        #blockages
+        legal_moves.each { |piece, moves|
+            type = piece.class.superclass.name
+            case type
+            when "Slider"
+                moves.map! do |lane|
+                    modified_lane(piece.color, lane)
+                end                
+            else 
+                moves = piece.valid_moves.select { |space|
+                    valid = true
+                    occupant = @board.field[space[0]][space[1]]
+                    if occupant && occupant.color == piece.color
+                        valid = false
+                    end
+                    valid
+                }
+                return moves.include?(position) ? true : false
+            end
+        }
+
+    end
+
+    def modified_lane(color,lane)
+        lane.each_with_index do |position, index|
+            if @board.field[position[0]][position[1]]
+                case @board.field[position[0]][position[1]].color
+                when color
+                    lane = lane[0...index]
+                    break
+                else
+                    lane = lane[0..index]
+                    break
+                end
+            end
+        end
+        lane
     end
 
     def save_state
         board = Marshal.load(Marshal.dump(@board))
-        player1 = Marshal.load(Marshal.dump(@player1))
-        player2 = Marshal.load(Marshal.dump(@player2))
-        @state = [board, player1, player2]
+        active_player = Marshal.load(Marshal.dump(@active_player))
+        inactive_player = Marshal.load(Marshal.dump(@inactive_player))
+        @state = [board, active_player, inactive_player]
     end
 
     def load_state
         @board = @state[0]
-        @player1 = @state[1]
-        @player2 = @state[2]
+        @active_player = @state[1]
+        @inactive_player = @state[2]
+        active_color = @active_player.color
+        inactive_color = @inactive_player.color
+        if active_color == 'white'
+            @player1 = @state[1]
+            @player2 = @state[2]
+        else
+            @player1 = @state[2]
+            @player2 = @state[1]
+        end
     end
 
     def checkmate?
@@ -102,7 +149,7 @@ class Game
     def move(piece, new_position)
         old_position = piece.position
         taken_piece = @board.field[new_position[0]][new_position[1]]
-        @board.field[new_position[0]][new_position[1]] = piece
+        #@board.field[new_position[0]][new_position[1]] = piece
         @board.field[old_position[0]][old_position[1]] = nil
         piece.move(new_position)
         taken_piece.moved = true if taken_piece
