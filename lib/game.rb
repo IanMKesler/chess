@@ -18,7 +18,7 @@ class Game
     def round
         @active_player.check = check? 
         legal_moves = construct_legal_moves
-        if legal_moves.empty?
+        if legal_moves.empty? #rework
             return false
         end
         piece = get_piece
@@ -41,14 +41,29 @@ class Game
             legal_moves[piece.class.name] = piece.valid_moves
         end
 
-        #blockages
+        legal_moves = remove_blocks(legal_moves)
+    
+        #Pawn Takes
+        pawns = legal_moves.select { |piece, moves|
+            piece.class.name == "Pawn"
+        }
+
+        pawns.each do |pawn, moves|
+
+        end
+
+
+    end
+
+    def remove_blocks(legal_moves)
         legal_moves.each { |piece, moves|
             type = piece.class.superclass.name
             case type
             when "Slider"
                 moves.map! do |lane|
                     modified_lane(piece.color, lane)
-                end                
+                end
+                legal_moves[piece] = moves.flatten(1)                
             else 
                 moves = piece.valid_moves.select { |space|
                     valid = true
@@ -58,10 +73,9 @@ class Game
                     end
                     valid
                 }
-                return moves.include?(position) ? true : false
+                legal_moves[piece] = moves
             end
         }
-
     end
 
     def modified_lane(color,lane)
@@ -78,41 +92,6 @@ class Game
             end
         end
         lane
-    end
-
-    def checkmate?
-        safe_moves = []
-        @active_player.pieces.each do |piece|
-            moves = piece.valid_moves.select { |move|
-                valid_move?(piece,move)
-            }
-            moves.select! { |space| 
-                move(piece,space)
-                safe = !check?
-                load_state
-                safe
-            }
-
-            if piece.class.name == 'Pawn'
-                takes = piece.valid_takes.select { |take|
-                valid_take?(piece, take)
-                }
-                
-                takes.select! { |space|
-                    move(piece, space)
-                    safe = !check?
-                    load_state
-                    safe
-                }
-            end
-
-            safe_moves += moves
-            safe_moves += takes if takes
-
-            safe_moves.empty? ? true : false
-
-        end
-
     end
 
     def check?
