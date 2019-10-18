@@ -17,7 +17,7 @@ class Game
 
     def round
         @active_player.check = check? 
-        legal_moves = construct_legal_moves
+        legal_moves = construct_legal_moves(@active_player)
         if legal_moves.empty? #rework
             return false
         end
@@ -35,15 +35,20 @@ class Game
 
     private 
 
-    def construct_legal_moves
+    def construct_legal_moves(player)
         legal_moves = {}
-        @active_player.pieces.each do |piece|
-            legal_moves[piece.class.name] = piece.valid_moves
+        player.pieces.each do |piece|
+            legal_moves[piece] = piece.valid_moves
         end
 
         legal_moves = remove_blocks(legal_moves)
         legal_moves = add_pawn_takes(legal_moves)
-        
+        #legal_moves = remove_check_moves(legal_moves) if player == @active_player
+        legal_moves
+    end
+
+    def remove_check_moves(legal_moves)
+
     end
 
     def add_pawn_takes(legal_moves)
@@ -108,11 +113,13 @@ class Game
 
     def check?
         king = @active_player.find_pieces("King")
-        pawns = @inactive_player.find_pieces("Pawn")
-        others = @inactive_player.pieces - pawns
-        threats = others.select { |piece| valid_move?(piece, king.position)}
-        threats += pawns.select { |piece| valid_take?(piece, king.position)}
-        threats.empty? ? false : true
+        opponent_moves = construct_legal_moves(@inactive_player)
+        opponent_moves.each do |piece, moves|
+            if moves.include?(king.position)
+                return true
+            end
+        end
+        return false
     end
 
     def unmove(post_move_piece)
