@@ -17,7 +17,7 @@ class Game
 
     def round
         opponent_moves = construct_legal_moves(@inactive_player)
-        @active_player.check = check?(opponent_moves) 
+        @active_player.check = check?(opponent_moves)
         legal_moves = construct_legal_moves(@active_player)
         if no_moves?(legal_moves)
             return false
@@ -48,12 +48,27 @@ class Game
         player.pieces.each do |piece|
             legal_moves[piece] = piece.valid_moves
         end
-    
+
+        legal_moves = add_castles(legal_moves, player) if player == @active_player
         legal_moves = remove_blocks(legal_moves)
         legal_moves = add_pawn_takes(legal_moves)
         legal_moves = remove_check_moves(legal_moves) if player == @active_player
-        legal_moves
+        
+
+        
     end
+
+    def add_castles(legal_moves, player)
+        castles = []
+        king = player.find_pieces("King")
+        if king.moved
+            return []
+        end
+        castles << queen_castle(player) #write
+        castles << king_castle(player)  #write
+        legal_moves[king] += castles
+    end
+
 
     def remove_check_moves(legal_moves)
         legal_moves.each do |piece, moves|

@@ -332,6 +332,21 @@ describe Game do
 
             legal_moves = game.send(:construct_legal_moves,game.active_player)
             expect(game.send(:no_moves?, legal_moves)).to be true
+            game.send(:unmove, black_queen)
+            game.send(:unmove, white_pawn2)
+            game.send(:unmove, black_pawn)
+            game.send(:unmove, white_pawn1)
+        end
+    end
+
+    describe '#.add_castles' do
+        it 'adds possible castle moves to king' do
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            king_moves = legal_moves[game.active_player.find_pieces("King")]
+            castles = [[7,0], [7,7]]
+            castles.each do |castle|
+                expect(king_moves.include?(castle)).to be true
+            end
         end
     end
 end
