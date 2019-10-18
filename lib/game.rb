@@ -40,15 +40,25 @@ class Game
         player.pieces.each do |piece|
             legal_moves[piece] = piece.valid_moves
         end
-
+    
         legal_moves = remove_blocks(legal_moves)
         legal_moves = add_pawn_takes(legal_moves)
-        #legal_moves = remove_check_moves(legal_moves) if player == @active_player
+        legal_moves = remove_check_moves(legal_moves) if player == @active_player
         legal_moves
     end
 
     def remove_check_moves(legal_moves)
-
+        legal_moves.each do |piece, moves|
+            moves.select! { |space|
+                move(piece,space)
+                opponent_moves = construct_legal_moves(@inactive_player)
+                valid = check?(opponent_moves) ? false : true
+                unmove(piece)
+                valid
+            }
+            legal_moves[piece] = moves
+        end
+        legal_moves
     end
 
     def add_pawn_takes(legal_moves)
@@ -111,9 +121,8 @@ class Game
         lane
     end
 
-    def check?
+    def check?(opponent_moves)
         king = @active_player.find_pieces("King")
-        opponent_moves = construct_legal_moves(@inactive_player)
         opponent_moves.each do |piece, moves|
             if moves.include?(king.position)
                 return true
@@ -135,7 +144,7 @@ class Game
                 @player1.pieces << @player1.taken.pop
             when 'black'
                 @player2.taken[-1].moved = taken_piece.moved
-                @player2.pieces << @player1.taken.pop
+                @player2.pieces << @player2.taken.pop
             end
         end
 
@@ -173,10 +182,10 @@ class Game
             case taken_piece.color
             when 'white'
                 @player1.taken << taken_piece
-                puts @player1.pieces.include?(taken_piece)
                 @player1.pieces.delete(taken_piece)
             when 'black'
-                @player2.taken << @player2.pieces.delete(taken_piece)
+                @player2.taken << taken_piece
+                @player2.pieces.delete(taken_piece)
             end
         end
         set_board

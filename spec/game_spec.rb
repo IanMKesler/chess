@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        allow($stdout).to receive(:write)
+        #allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -82,13 +82,15 @@ describe Game do
 
     describe "#.check?" do
         it 'returns false if active_player is safe' do
-            expect(game.send(:check?)).to be false
+            opponent_moves = game.send(:construct_legal_moves, game.inactive_player)
+            expect(game.send(:check?, opponent_moves)).to be false
         end
 
 
         it 'returns true if active_player king is threatened by pawn' do
             game.send(:move, game.inactive_player.pieces[6],[6,3])
-            expect(game.send(:check?)).to be true
+            opponent_moves = game.send(:construct_legal_moves, game.inactive_player)
+            expect(game.send(:check?, opponent_moves)).to be true
             game.send(:unmove, game.inactive_player.pieces[6])   
                      
         end
@@ -98,7 +100,8 @@ describe Game do
             game.send(:move, pawn, [5,0])
             rook = game.inactive_player.find_piece([0,0])
             game.send(:move, rook,[2,4])
-            expect(game.send(:check?)).to be true
+            opponent_moves = game.send(:construct_legal_moves, game.inactive_player)
+            expect(game.send(:check?, opponent_moves)).to be true
             game.send(:unmove, rook)
             game.send(:unmove, pawn)            
         end
@@ -113,12 +116,12 @@ describe Game do
             pawn2 = game.player2.find_piece([1,0])
             game.send(:move, pawn1, [5,1])
             game.send(:move, pawn2, [5,2])
-            game.board.show
+            
             valid = [[6,0], [5,0], [4,0], [3,0], [2,0], [1,0], [0,0]]
             expect(game.send(:modified_lane, game.player1.color, lane)).to eql (valid)
             game.send(:unmove, pawn2)
             game.send(:unmove, pawn1)
-            game.board.show
+            
         end
     end
 
@@ -191,6 +194,123 @@ describe Game do
             expected_moves.each do |piece, moves|
                 expect(legal_moves[piece]).to eql(moves)
             end
+            pawns.each_with_index do |pawn, index|
+                game.send(:unmove, pawn)
+            end
+        end
+    end
+
+    describe '#.remove_check_moves' do
+        it 'removes nothing if no check moves' do
+            legal_moves = {}
+            game.active_player.pieces.each do |piece|
+                legal_moves[piece] = piece.valid_moves
+            end
+
+            legal_moves = game.send(:remove_blocks,legal_moves)
+            legal_moves = game.send(:add_pawn_takes, legal_moves)
+            legal_moves = game.send(:remove_check_moves,legal_moves)
+            
+            expected_moves = {
+                game.active_player.find_piece([7,0]) => [],
+                game.active_player.find_piece([7,7]) => [],
+                game.active_player.find_piece([7,1]) => [[5,2], [5,0]],
+                game.active_player.find_piece([7,6]) => [[5,7], [5,5]],
+                game.active_player.find_piece([7,2]) => [],
+                game.active_player.find_piece([7,5]) => [],
+                game.active_player.find_piece([7,3]) => [],
+                game.active_player.find_piece([7,4]) => [],
+                game.active_player.find_piece([6,0]) => [[5,0], [4,0]],
+                game.active_player.find_piece([6,1]) => [[5,1], [4,1]],
+                game.active_player.find_piece([6,2]) => [[5,2], [4,2]],
+                game.active_player.find_piece([6,3]) => [[5,3], [4,3]],
+                game.active_player.find_piece([6,4]) => [[5,4], [4,4]],
+                game.active_player.find_piece([6,5]) => [[5,5], [4,5]],
+                game.active_player.find_piece([6,6]) => [[5,6], [4,6]],
+                game.active_player.find_piece([6,7]) => [[5,7], [4,7]]
+            }
+
+            expected_moves.each do |piece, moves|
+                expect(legal_moves[piece]).to eql(moves)
+            end
+        end
+
+        it 'removes moves that lead to check' do
+            bishop = game.player2.find_piece([0,2])
+            game.send(:move, bishop, [3,0])
+            
+            legal_moves = {}
+            game.active_player.pieces.each do |piece|
+                legal_moves[piece] = piece.valid_moves
+            end
+
+            legal_moves = game.send(:remove_blocks,legal_moves)
+            legal_moves = game.send(:add_pawn_takes, legal_moves)
+            legal_moves = game.send(:remove_check_moves,legal_moves)
+            
+            expected_moves = {
+                game.active_player.find_piece([7,0]) => [],
+                game.active_player.find_piece([7,7]) => [],
+                game.active_player.find_piece([7,1]) => [[5,2], [5,0]],
+                game.active_player.find_piece([7,6]) => [[5,7], [5,5]],
+                game.active_player.find_piece([7,2]) => [],
+                game.active_player.find_piece([7,5]) => [],
+                game.active_player.find_piece([7,3]) => [],
+                game.active_player.find_piece([7,4]) => [],
+                game.active_player.find_piece([6,0]) => [[5,0], [4,0]],
+                game.active_player.find_piece([6,1]) => [[5,1], [4,1]],
+                game.active_player.find_piece([6,2]) => [[5,2], [4,2]],
+                game.active_player.find_piece([6,3]) => [],
+                game.active_player.find_piece([6,4]) => [[5,4], [4,4]],
+                game.active_player.find_piece([6,5]) => [[5,5], [4,5]],
+                game.active_player.find_piece([6,6]) => [[5,6], [4,6]],
+                game.active_player.find_piece([6,7]) => [[5,7], [4,7]]
+            }
+
+            expected_moves.each do |piece, moves|
+                expect(legal_moves[piece]).to eql(moves)
+            end
+
+            game.send(:unmove, bishop)
+        end
+
+        it 'removes moves that leave active player in check' do
+            pawn = game.player2.find_piece([1,3])
+            game.send(:move, pawn, [6,3])
+
+
+            legal_moves = {}
+            game.active_player.pieces.each do |piece|
+                legal_moves[piece] = piece.valid_moves
+            end
+
+            legal_moves = game.send(:remove_blocks,legal_moves)
+            legal_moves = game.send(:add_pawn_takes, legal_moves)
+            legal_moves = game.send(:remove_check_moves,legal_moves)
+            
+            expected_moves = {
+                game.active_player.find_piece([7,0]) => [],
+                game.active_player.find_piece([7,7]) => [],
+                game.active_player.find_piece([7,1]) => [[6,3]],
+                game.active_player.find_piece([7,6]) => [],
+                game.active_player.find_piece([7,2]) => [[6,3]],
+                game.active_player.find_piece([7,5]) => [],
+                game.active_player.find_piece([7,3]) => [[6,3]],
+                game.active_player.find_piece([7,4]) => [],
+                game.active_player.find_piece([6,0]) => [],
+                game.active_player.find_piece([6,1]) => [],
+                game.active_player.find_piece([6,2]) => [],
+                game.active_player.find_piece([6,4]) => [],
+                game.active_player.find_piece([6,5]) => [],
+                game.active_player.find_piece([6,6]) => [],
+                game.active_player.find_piece([6,7]) => []
+            }
+
+            expected_moves.each do |piece, moves|
+                expect(legal_moves[piece]).to eql(moves)
+            end
+
+            game.send(:unmove, pawn)
         end
     end
 end
