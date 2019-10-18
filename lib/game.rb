@@ -16,9 +16,10 @@ class Game
     end
 
     def round
-        @active_player.check = check? 
+        opponent_moves = construct_legal_moves(@inactive_player)
+        @active_player.check = check?(opponent_moves) 
         legal_moves = construct_legal_moves(@active_player)
-        if legal_moves.empty? #rework
+        if no_moves?(legal_moves)
             return false
         end
         piece = get_piece
@@ -34,6 +35,13 @@ class Game
     end
 
     private 
+
+    def no_moves?(legal_moves)
+        legal_moves.each do |piece,moves|
+            return false unless moves.empty?
+        end
+        return true
+    end
 
     def construct_legal_moves(player)
         legal_moves = {}
@@ -132,7 +140,9 @@ class Game
     end
 
     def unmove(post_move_piece)
-        state = @state.select { |state| state[2] == post_move_piece}.flatten
+        state = @state.select { |state| 
+            state[2] == post_move_piece
+        }[-1]
         return false if state.empty?
         pre_move_piece = state[0]
         taken_piece = state[1]

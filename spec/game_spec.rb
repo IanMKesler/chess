@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        #allow($stdout).to receive(:write)
+        allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -311,6 +311,27 @@ describe Game do
             end
 
             game.send(:unmove, pawn)
+        end
+    end
+
+    describe '#.no_moves?' do
+        it 'returns false if some move possible' do
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            expect(game.send(:no_moves?, legal_moves)).to be false
+        end
+
+        it 'returns true if no moves are possible' do
+            white_pawn1 = game.player1.find_piece([6,5])
+            game.send(:move,white_pawn1,[5,5])
+            black_pawn = game.player2.find_piece([1,4])
+            game.send(:move,black_pawn, [3,4])
+            white_pawn2 = game.player1.find_piece([6,6]) 
+            game.send(:move,white_pawn2, [4,6])
+            black_queen = game.player2.find_piece([0,3])
+            game.send(:move, black_queen, [4,7])
+
+            legal_moves = game.send(:construct_legal_moves,game.active_player)
+            expect(game.send(:no_moves?, legal_moves)).to be true
         end
     end
 end
