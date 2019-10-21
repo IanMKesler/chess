@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        #allow($stdout).to receive(:write)
+        allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -357,7 +357,6 @@ describe Game do
             game.send(:move, queen_knight, [5,1])
             game.send(:move, queen_bishop, [5,2])
             game.send(:move, king_knight, [5,7])
-            #game.board.show
             expect(game.send(:castle?, king, queen_rook)).to be false
             expect(game.send(:castle?, king, king_rook)).to be false
         end
@@ -368,7 +367,6 @@ describe Game do
             game.send(:move, queen, [5,3])
             game.send(:move, opponent_pawn1, [6,1])
             game.send(:move, opponent_rook, [2,5])
-            #game.board.show
             expect(game.send(:castle?, king, queen_rook)).to be false
             expect(game.send(:castle?, king, king_rook)).to be false
         end
@@ -376,7 +374,6 @@ describe Game do
         it 'returns true if castle is legal' do
             game.send(:unmove, opponent_rook)
             game.send(:unmove, opponent_pawn1)
-            #game.board.show
             expect(game.send(:castle?, king, queen_rook)).to be true
             expect(game.send(:castle?, king, king_rook)).to be true
             game.send(:unmove, queen)
@@ -385,7 +382,6 @@ describe Game do
             game.send(:unmove, king_knight)
             game.send(:unmove, queen_bishop)
             game.send(:unmove, queen_knight)
-            game.board.show
         end
         
     end
@@ -442,6 +438,68 @@ describe Game do
 
             game.send(:unmove, king_bishop)
             game.send(:unmove, king_knight)
+        end
+    end
+
+    describe '#.move' do
+        white_pawn = game.active_player.find_pieces("Pawn")[0]
+        black_pawn = game.inactive_player.find_pieces("Pawn")[0]
+
+        it 'sets Pawn en passant to true when appropriate' do
+            game.send(:move, white_pawn, [4,0])
+            game.send(:move, black_pawn, [3,0])
+            expect(white_pawn.en_passant).to be true
+            expect(black_pawn.en_passant).to be true
+
+        end
+
+        it 'sets Pawn en passant to false when appropriate' do
+            game.send(:unmove, black_pawn)
+            game.send(:move, black_pawn, [2,0])
+            expect(black_pawn.en_passant).to be false
+            game.send(:move, white_pawn, [3,0])
+            expect(white_pawn.en_passant).to be false
+            game.send(:unmove, white_pawn)
+            game.send(:unmove, black_pawn)
+            game.send(:unmove, white_pawn)
+        end
+    end
+
+    describe '#.add_en_passant' do
+        it 'adds nothing when no en passant' do
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            expected_moves = {
+                game.active_player.find_piece([7,0]) => [],
+                game.active_player.find_piece([7,7]) => [],
+                game.active_player.find_piece([7,1]) => [[5,2], [5,0]],
+                game.active_player.find_piece([7,6]) => [[5,7], [5,5]],
+                game.active_player.find_piece([7,2]) => [],
+                game.active_player.find_piece([7,5]) => [],
+                game.active_player.find_piece([7,3]) => [],
+                game.active_player.find_piece([7,4]) => [],
+                game.active_player.find_piece([6,0]) => [[5,0], [4,0]],
+                game.active_player.find_piece([6,1]) => [[5,1], [4,1]],
+                game.active_player.find_piece([6,2]) => [[5,2], [4,2]],
+                game.active_player.find_piece([6,3]) => [[5,3], [4,3]],
+                game.active_player.find_piece([6,4]) => [[5,4], [4,4]],
+                game.active_player.find_piece([6,5]) => [[5,5], [4,5]],
+                game.active_player.find_piece([6,6]) => [[5,6], [4,6]],
+                game.active_player.find_piece([6,7]) => [[5,7], [4,7]]
+            }
+
+            expected_moves.each do |piece, moves|
+                expect(legal_moves[piece]).to eql(moves)
+            end
+        end
+
+        it 'adds valid en passant takes' do
+            black_pawn = game.player2.find_pieces('Pawn')[0]
+            white_pawn = game.player1.find_pieces('Pawn')[0]
+
+            game.send(:move, white_pawn, [3,1])
+            game.send(:move, black_pawn, [3,0])
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            expect(legal_moves[white_pawn].include?([2,0])).to be true
         end
     end
 end

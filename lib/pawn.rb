@@ -3,13 +3,14 @@ class Pawn < Piece
     @@MOVES = [[1,0], [-1,0]]
     @@TAKES = [[1,-1], [1,1], [-1,-1], [-1, 1]]
 
-    attr_accessor :position, :moved #for testing
+    attr_accessor :position, :moved, :en_passant #for testing
 
     def initialize(color)
         super(color)
         @sym = color == 'black' ? "\u2659" : "\u265F"
         count = @@count[self.class.to_s]
         @position = @color == 'black' ? [1,count-1] : [6,count-1]
+        @en_passant = false
     end
 
     def valid_moves

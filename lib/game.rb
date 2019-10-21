@@ -52,11 +52,34 @@ class Game
         legal_moves = add_castles(legal_moves) if player == @active_player && player.check == false
         legal_moves = remove_blocks(legal_moves)
         legal_moves = add_pawn_takes(legal_moves)
+        legal_moves = add_en_passant(legal_moves)
         legal_moves = remove_check_moves(legal_moves) if player == @active_player
-        
         legal_moves
-        
     end
+
+    def add_en_passant(legal_moves)
+        pawns = legal_moves.select { |piece, moves|
+            piece.class.name == "Pawn"
+        }
+        pawns.each do |pawn, moves|
+            pawn.valid_takes.each do |take|
+                case pawn.color
+                when 'white'
+                    opponent = @board.field[take[0]+1][take[1]]
+                    if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
+                        legal_moves[pawn] << take
+                    end
+                when 'black'
+                    opponent = @board.field[take[0]-1][take[1]]
+                    if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
+                        legal_moves[pawn] << take
+                    end
+                end
+            end
+        end
+        legal_moves
+    end
+
 
     def castle_move(king, rook)
         row= king.position[0]
@@ -247,6 +270,14 @@ class Game
         state << taken_piece.dup
         @state << state
         @board.field[old_position[0]][old_position[1]] = nil
+        if piece.class.name == 'Pawn'
+            case piece.color
+            when 'white'
+                piece.en_passant = piece.position[0]-2 == new_position[0] ? true : false
+            when 'black'
+                piece.en_passant = piece.position[0]+2 == new_position[0] ? true : false
+            end
+        end
         piece.move(new_position)
         state << piece
         taken_piece.moved = true if taken_piece
@@ -260,6 +291,7 @@ class Game
                 @player2.pieces.delete(taken_piece)
             end
         end
+        
         set_board
     end
 
