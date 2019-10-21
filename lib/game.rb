@@ -49,24 +49,71 @@ class Game
             legal_moves[piece] = piece.valid_moves
         end
 
-        legal_moves = add_castles(legal_moves, player) if player == @active_player
+        legal_moves = add_castles(legal_moves) if player == @active_player && player.check == false
         legal_moves = remove_blocks(legal_moves)
         legal_moves = add_pawn_takes(legal_moves)
         legal_moves = remove_check_moves(legal_moves) if player == @active_player
         
-
+        legal_moves
         
     end
 
-    def add_castles(legal_moves, player)
-        castles = []
-        king = player.find_pieces("King")
-        if king.moved
-            return []
+    def castle_move(king, rook)
+        row= king.position[0]
+        case king.position[1] > rook.position[1]
+        when true #Queen-side
+            return [row, 2]
+        when false #King-side
+            return [row, 6]
         end
-        castles << queen_castle(player) #write
-        castles << king_castle(player)  #write
+    end
+
+    def castle?(king, rook)
+        row = king.position[0]
+        case king.position[1] > rook.position[1]
+        when true #Queen-side
+            between = (rook.position[1]+1...king.position[1]).to_a
+            between.each do |column|
+                return false if @board.field[row][column]
+            end
+            king_moves = between[-2..-1]
+            king_moves.each do |column|
+                move(king, [row,column])
+                opponent_moves = construct_legal_moves(@inactive_player)
+                threatened = check?(opponent_moves)
+                unmove(king)
+                return false if threatened
+            end
+            return true
+        when false #King-side
+            between = (king.position[1]+1...rook.position[1]).to_a
+            between.each do |column|
+                return false if @board.field[row][column]
+            end
+            king_moves = between[0..1]
+            king_moves.each do |column|
+                move(king, [row,column])
+                opponent_moves = construct_legal_moves(@inactive_player)
+                valid = check?(opponent_moves)
+                unmove(king)
+                return false if valid
+            end
+            return true
+        end
+    end
+
+    def add_castles(legal_moves)
+        castles = []
+        king = @active_player.find_pieces("King")
+        rooks = @active_player.find_pieces("Rook")
+        if king.moved || rooks.select{ |rook| rook.moved == false}.length == 0
+            return legal_moves
+        end
+        rooks.each do |rook|
+            castles << castle_move(king, rook) if castle?(king, rook)
+        end 
         legal_moves[king] += castles
+        legal_moves
     end
 
 

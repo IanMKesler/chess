@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        allow($stdout).to receive(:write)
+        #allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -40,6 +40,7 @@ describe Game do
 
         it 're-prompts for an invalid input' do
             game.stub(:gets).and_return("a7\n", "b3\n", "f2\n")
+            #game.board.show
             expect(game.send(:get_piece).class.to_s).to eql("Pawn")
         end
     end
@@ -338,15 +339,109 @@ describe Game do
             game.send(:unmove, white_pawn1)
         end
     end
+    
+    describe '#.castle?' do
+        king = game.active_player.find_pieces("King")
+        queen_rook = game.active_player.find_piece([7,0])
+        king_rook = game.active_player.find_piece([7,7])
+        queen_knight = game.active_player.find_piece([7,1])
+        king_knight = game.active_player.find_piece([7,6])
+        queen_bishop = game.active_player.find_piece([7,2])
+        king_bishop = game.active_player.find_piece([7,5])
+        queen = game.active_player.find_piece([7,3])
+        pawn = game.active_player.find_piece([6,5])
+        opponent_pawn1 = game.inactive_player.find_piece([1,0])
+        opponent_pawn2 = game.inactive_player.find_piece([1,1])
+        opponent_rook = game.inactive_player.find_piece([0,7])
+        it 'returns false if blocked' do
+            game.send(:move, queen_knight, [5,1])
+            game.send(:move, queen_bishop, [5,2])
+            game.send(:move, king_knight, [5,7])
+            #game.board.show
+            expect(game.send(:castle?, king, queen_rook)).to be false
+            expect(game.send(:castle?, king, king_rook)).to be false
+        end
+
+        it 'returns false if king passes through threatened square' do
+            game.send(:move, king_bishop, [5,4])
+            game.send(:move, pawn, [5,6])
+            game.send(:move, queen, [5,3])
+            game.send(:move, opponent_pawn1, [6,1])
+            game.send(:move, opponent_rook, [2,5])
+            #game.board.show
+            expect(game.send(:castle?, king, queen_rook)).to be false
+            expect(game.send(:castle?, king, king_rook)).to be false
+        end
+
+        it 'returns true if castle is legal' do
+            game.send(:unmove, opponent_rook)
+            game.send(:unmove, opponent_pawn1)
+            #game.board.show
+            expect(game.send(:castle?, king, queen_rook)).to be true
+            expect(game.send(:castle?, king, king_rook)).to be true
+            game.send(:unmove, queen)
+            game.send(:unmove, pawn)
+            game.send(:unmove, king_bishop)
+            game.send(:unmove, king_knight)
+            game.send(:unmove, queen_bishop)
+            game.send(:unmove, queen_knight)
+            game.board.show
+        end
+        
+    end
 
     describe '#.add_castles' do
-        it 'adds possible castle moves to king' do
+        it 'adds no castle moves to king' do
             legal_moves = game.send(:construct_legal_moves, game.active_player)
             king_moves = legal_moves[game.active_player.find_pieces("King")]
-            castles = [[7,0], [7,7]]
+            castles = [[7,2], [7,6]]
             castles.each do |castle|
-                expect(king_moves.include?(castle)).to be true
+                expect(king_moves.include?(castle)).to be false
             end
+        end
+
+        it 'adds king side castle move' do
+            king = game.active_player.find_pieces("King")
+            queen_rook = game.active_player.find_piece([7,0])
+            king_rook = game.active_player.find_piece([7,7])
+            queen_knight = game.active_player.find_piece([7,1])
+            king_knight = game.active_player.find_piece([7,6])
+            queen_bishop = game.active_player.find_piece([7,2])
+            king_bishop = game.active_player.find_piece([7,5])
+            queen = game.active_player.find_piece([7,3])
+
+            game.send(:move, queen_knight, [5,1])
+            game.send(:move, queen_bishop, [5,2])
+            game.send(:move, queen, [5,3])
+
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            king_moves = legal_moves[game.active_player.find_pieces("King")]
+
+            expect(king_moves.include?([7,2])).to be true
+            expect(king_moves.include?([7,6])).to be false
+
+            game.send(:unmove, queen)
+            game.send(:unmove, queen_bishop)
+            game.send(:unmove, queen_knight)
+        end
+
+        it 'adds queen side castle move' do
+            king = game.active_player.find_pieces("King")
+            king_rook = game.active_player.find_piece([7,7])
+            king_knight = game.active_player.find_piece([7,6])
+            king_bishop = game.active_player.find_piece([7,5])
+            
+            game.send(:move, king_knight, [5,7])
+            game.send(:move, king_bishop, [5,4])
+
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            king_moves = legal_moves[game.active_player.find_pieces("King")]
+
+            expect(king_moves.include?([7,2])).to be false
+            expect(king_moves.include?([7,6])).to be true
+
+            game.send(:unmove, king_bishop)
+            game.send(:unmove, king_knight)
         end
     end
 end
