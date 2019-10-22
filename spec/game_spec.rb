@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        allow($stdout).to receive(:write)
+        #allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -128,11 +128,15 @@ describe Game do
 
     describe '#.remove_blocks' do
         it 'returns a modified hash with blocked spaces removed' do
+            black_pawn1 = game.player2.find_piece([1,5])
+            black_pawn2 = game.player2.find_piece([1,0])
+            game.send(:move, black_pawn1, [5,0])
+            game.send(:move, black_pawn2, [4,2])
             legal_moves = {}
             game.active_player.pieces.each do |piece|
                 legal_moves[piece] = piece.valid_moves
             end
-
+            game.board.show
             legal_moves = game.send(:remove_blocks,legal_moves)
             expected_moves = {
                 game.active_player.find_piece([7,0]) => [],
@@ -143,9 +147,9 @@ describe Game do
                 game.active_player.find_piece([7,5]) => [],
                 game.active_player.find_piece([7,3]) => [],
                 game.active_player.find_piece([7,4]) => [],
-                game.active_player.find_piece([6,0]) => [[5,0], [4,0]],
+                game.active_player.find_piece([6,0]) => [],
                 game.active_player.find_piece([6,1]) => [[5,1], [4,1]],
-                game.active_player.find_piece([6,2]) => [[5,2], [4,2]],
+                game.active_player.find_piece([6,2]) => [[5,2]],
                 game.active_player.find_piece([6,3]) => [[5,3], [4,3]],
                 game.active_player.find_piece([6,4]) => [[5,4], [4,4]],
                 game.active_player.find_piece([6,5]) => [[5,5], [4,5]],
@@ -156,6 +160,9 @@ describe Game do
             expected_moves.each do |piece, moves|
                 expect(legal_moves[piece]).to eql(moves)
             end
+
+            game.send(:unmove, black_pawn2)
+            game.send(:unmove, black_pawn1)
         end
     end
 
@@ -447,8 +454,8 @@ describe Game do
 
         it 'sets Pawn en passant to true when appropriate' do
             game.send(:move, white_pawn, [4,0])
-            game.send(:move, black_pawn, [3,0])
             expect(white_pawn.en_passant).to be true
+            game.send(:move, black_pawn, [3,0])
             expect(black_pawn.en_passant).to be true
 
         end
@@ -462,6 +469,19 @@ describe Game do
             game.send(:unmove, white_pawn)
             game.send(:unmove, black_pawn)
             game.send(:unmove, white_pawn)
+        end
+
+        it 'takes a piece when a pawn performs an en passant take' do
+            game.send(:move, white_pawn, [3,1])
+            game.send(:move, black_pawn, [3,0])
+            game.send(:move, white_pawn, [2,0])
+            
+            expect(game.player2.taken.include?(black_pawn)).to be true
+            game.send(:unmove, white_pawn)
+            game.send(:unmove, black_pawn)
+            game.send(:unmove, white_pawn)
+            
+            
         end
     end
 
@@ -500,6 +520,16 @@ describe Game do
             game.send(:move, black_pawn, [3,0])
             legal_moves = game.send(:construct_legal_moves, game.active_player)
             expect(legal_moves[white_pawn].include?([2,0])).to be true
+
+            game.send(:unmove, black_pawn)
+            game.send(:unmove, white_pawn)
+
+            game.send(:move, black_pawn, [4,1])
+            game.send(:move, white_pawn, [4,0])
+            legal_moves = game.send(:construct_legal_moves, game.inactive_player)
+            expect(legal_moves[black_pawn].include?([5,0])).to be true
         end
     end
+
+
 end

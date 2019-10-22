@@ -16,6 +16,7 @@ class Game
     end
 
     def round
+        reset_en_passant
         opponent_moves = construct_legal_moves(@inactive_player)
         @active_player.check = check?(opponent_moves)
         legal_moves = construct_legal_moves(@active_player)
@@ -35,6 +36,13 @@ class Game
     end
 
     private 
+
+    def reset_en_passant
+        pawns = @active_player.pieces.select{ |piece| piece.class.name == 'Pawn'}
+        pawns.each do |pawn|
+            pawn.en_passant = false
+        end
+    end
 
     def no_moves?(legal_moves)
         legal_moves.each do |piece,moves|
@@ -57,6 +65,14 @@ class Game
         legal_moves
     end
 
+    def en_passant?(pawn, opponent)
+        if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
+            return true
+        else
+            return false
+        end
+    end
+
     def add_en_passant(legal_moves)
         pawns = legal_moves.select { |piece, moves|
             piece.class.name == "Pawn"
@@ -66,14 +82,10 @@ class Game
                 case pawn.color
                 when 'white'
                     opponent = @board.field[take[0]+1][take[1]]
-                    if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
-                        legal_moves[pawn] << take
-                    end
+                    legal_moves[pawn] << take if en_passant?(pawn, opponent)
                 when 'black'
                     opponent = @board.field[take[0]-1][take[1]]
-                    if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
-                        legal_moves[pawn] << take
-                    end
+                    legal_moves[pawn] << take if en_passant?(pawn, opponent)
                 end
             end
         end
@@ -179,8 +191,9 @@ class Game
                 end
                 legal_moves[piece] = moves.flatten(1)
             when "Piece"
+                valid = true
                 moves.select! { |space|
-                    valid = @board.field[space[0]][space[1]] ? false : true
+                    valid = false if @board.field[space[0]][space[1]]
                     valid
                 }
                 legal_moves[piece] = moves
@@ -228,7 +241,7 @@ class Game
         state = @state.select { |state| 
             state[2] == post_move_piece
         }[-1]
-        return false if state.empty?
+        return false if state.empty? #throws error nil.empty?
         pre_move_piece = state[0]
         taken_piece = state[1]
 
@@ -266,11 +279,21 @@ class Game
     def move(piece, new_position)
         old_position = piece.position
         state = [piece.dup]
+        @board.field[old_position[0]][old_position[1]] = nil     
         taken_piece = @board.field[new_position[0]][new_position[1]]
-        state << taken_piece.dup
-        @state << state
-        @board.field[old_position[0]][old_position[1]] = nil
         if piece.class.name == 'Pawn'
+            #en_passant_take
+            if piece.valid_takes.include?(new_position)
+                en_passant_positions = [[old_position[0], old_position[1]-1], [old_position[0], old_position[1]+1]]
+                en_passant_positions.each do |position|
+                    opponent = @board.field[position[0]][position[1]] 
+                    if opponent && en_passant?(piece,opponent)
+                        taken_piece = opponent
+                        @board.field[position[0]][position[1]] = nil
+                    end
+                end
+            end
+            #set_en_passant
             case piece.color
             when 'white'
                 piece.en_passant = piece.position[0]-2 == new_position[0] ? true : false
@@ -278,8 +301,10 @@ class Game
                 piece.en_passant = piece.position[0]+2 == new_position[0] ? true : false
             end
         end
+        state << taken_piece.dup
         piece.move(new_position)
         state << piece
+        @state << state
         taken_piece.moved = true if taken_piece
         if taken_piece
             case taken_piece.color
