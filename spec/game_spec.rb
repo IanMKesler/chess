@@ -403,7 +403,7 @@ describe Game do
             end
         end
 
-        it 'adds king side castle move' do
+        it 'adds queen side castle move' do
             king = game.active_player.find_pieces("King")
             queen_rook = game.active_player.find_piece([7,0])
             king_rook = game.active_player.find_piece([7,7])
@@ -428,7 +428,7 @@ describe Game do
             game.send(:unmove, queen_knight)
         end
 
-        it 'adds queen side castle move' do
+        it 'adds king side castle move' do
             king = game.active_player.find_pieces("King")
             king_rook = game.active_player.find_piece([7,7])
             king_knight = game.active_player.find_piece([7,6])
@@ -479,9 +479,46 @@ describe Game do
             expect(game.player2.taken.include?(black_pawn)).to be true
             game.send(:unmove, white_pawn)
             game.send(:unmove, black_pawn)
-            game.send(:unmove, white_pawn)
-            
-            
+            game.send(:unmove, white_pawn)            
+        end
+
+        it 'handles castling' do
+            king = game.active_player.find_pieces("King")
+            queen_rook = game.active_player.find_piece([7,0])
+            king_rook = game.active_player.find_piece([7,7])
+            queen_knight = game.active_player.find_piece([7,1])
+            king_knight = game.active_player.find_piece([7,6])
+            queen_bishop = game.active_player.find_piece([7,2])
+            king_bishop = game.active_player.find_piece([7,5])
+            queen = game.active_player.find_piece([7,3])
+
+            game.send(:move, queen_knight, [5,1])
+            game.send(:move, queen_bishop, [5,2])
+            game.send(:move, queen, [5,3])
+            game.send(:move, king_knight, [5,7])
+            game.send(:move, king_bishop, [5,4])
+
+            game.send(:move, king, [7,2])
+            game.board.show
+            expect(game.board.field[7][2]).to eql(king)
+            expect(game.board.field[7][3]).to eql(queen_rook)
+
+            game.send(:unmove, king)
+            game.board.show
+
+            game.send(:move, king, [7,6])
+            game.board.show
+            expect(game.board.field[7][6]).to eql(king)
+            expect(game.board.field[7][5]).to eql(king_rook)
+
+            game.send(:unmove, king)
+            game.board.show
+
+            game.send(:unmove, king_bishop)
+            game.send(:unmove, king_knight)
+            game.send(:unmove, queen)
+            game.send(:unmove, queen_bishop)
+            game.send(:unmove, queen_knight)
         end
     end
 

@@ -255,6 +255,7 @@ class Game
                 @player2.pieces << @player2.taken.pop
             end
         end
+        
 
         post_position = post_move_piece.position
         @board.field[post_position[0]][post_position[1]] = nil
@@ -272,6 +273,29 @@ class Game
             piece.moved = pre_move_piece.moved
         end
 
+        #unmove rook for castle
+        if state.length == 5
+            pre_castle = state[3]
+            post_castle = state[4]
+
+            post_position = post_castle.position
+
+            @board.field[post_position[0]][post_position[1]] = nil
+
+            case post_castle.color
+            when 'white'
+                index = @player1.pieces.index(post_castle)
+                piece = @player1.pieces[index]
+                piece.position = pre_castle.position
+                piece.moved = pre_castle.moved
+            when 'black'
+                index = @player2.pieces.index(post_castle)
+                piece = @player2.pieces[index]
+                piece.position = pre_castle.position
+                piece.moved = pre_castle.moved
+            end
+        end
+
         set_board 
         @state.delete(state)
     end
@@ -281,6 +305,41 @@ class Game
         state = [piece.dup]
         @board.field[old_position[0]][old_position[1]] = nil     
         taken_piece = @board.field[new_position[0]][new_position[1]]
+        if piece.class.name == "King" && piece.moved == false
+            #move rook for castle
+            case piece.color
+            when 'white'
+                case new_position
+                when [7,2]
+                    castle = @board.field[7][0]
+                    pre_castle = castle.dup
+                    castle.move([7,3])
+                    post_castle = castle
+                    @board.field[7][0] = nil
+                when [7,6]
+                    castle = @board.field[7][7]
+                    pre_castle = castle.dup
+                    castle.move([7,5])
+                    post_castle = castle
+                    @board.field[7][7] = nil
+                end
+            when 'black'
+                case new_position
+                when [0,2]
+                    castle = @board.field[0][0]
+                    pre_castle = castle.dup
+                    castle.move([0,3])
+                    post_castle = castle
+                    @board.field[0][0] = nil
+                when [0,6]
+                    castle = @board.field[0][7]
+                    pre_castle = castle.dup
+                    castle.move([0,5])
+                    post_castle = castle
+                    @board.field[0][7] = nil
+                end
+            end
+        end
         if piece.class.name == 'Pawn'
             #en_passant_take
             if piece.valid_takes.include?(new_position)
@@ -304,6 +363,10 @@ class Game
         state << taken_piece.dup
         piece.move(new_position)
         state << piece
+        if pre_castle
+            state << pre_castle
+            state << post_castle
+        end
         @state << state
         taken_piece.moved = true if taken_piece
         if taken_piece
