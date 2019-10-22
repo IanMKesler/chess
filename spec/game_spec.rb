@@ -136,7 +136,7 @@ describe Game do
             game.active_player.pieces.each do |piece|
                 legal_moves[piece] = piece.valid_moves
             end
-            game.board.show
+            #game.board.show
             legal_moves = game.send(:remove_blocks,legal_moves)
             expected_moves = {
                 game.active_player.find_piece([7,0]) => [],
@@ -499,20 +499,20 @@ describe Game do
             game.send(:move, king_bishop, [5,4])
 
             game.send(:move, king, [7,2])
-            game.board.show
+            #game.board.show
             expect(game.board.field[7][2]).to eql(king)
             expect(game.board.field[7][3]).to eql(queen_rook)
 
             game.send(:unmove, king)
-            game.board.show
+            #game.board.show
 
             game.send(:move, king, [7,6])
-            game.board.show
+            #game.board.show
             expect(game.board.field[7][6]).to eql(king)
             expect(game.board.field[7][5]).to eql(king_rook)
 
             game.send(:unmove, king)
-            game.board.show
+            #game.board.show
 
             game.send(:unmove, king_bishop)
             game.send(:unmove, king_knight)
@@ -565,6 +565,32 @@ describe Game do
             game.send(:move, white_pawn, [4,0])
             legal_moves = game.send(:construct_legal_moves, game.inactive_player)
             expect(legal_moves[black_pawn].include?([5,0])).to be true
+            game.send(:unmove, white_pawn)
+            game.send(:unmove, black_pawn)
+        end
+    end
+
+    describe '#.round' do
+        it 'runs through a round assuming valid choices' do
+            pawn = game.player1.find_piece([6,3])
+            game.stub(:gets).and_return("d2\n", "d4\n")
+            game.round
+            #game.board.show
+            expect(game.active_player).to eql(game.player2)
+        end
+
+        it 're-requests a piece if not picking your piece' do
+            game.stub(:gets).and_return("c1\n", "e7\n", "e5\n")
+            game.round
+            #game.board.show
+            expect(game.active_player).to eql(game.player1)
+        end
+
+        it 're-requests a move if the move is invalid' do
+            game.stub(:gets).and_return("c1\n", "h4\n", "h6\n")
+            game.round
+            game.board.show
+            expect(game.active_player).to eql(game.player2)
         end
     end
 

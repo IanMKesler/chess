@@ -23,10 +23,12 @@ class Game
         if no_moves?(legal_moves)
             return false
         end
+        @board.show
         piece = get_piece
         move = get_move(piece)
         until legal_moves[piece].include?(move)
             puts "That's an invalid move! Try again."
+            puts "Your King is still in check!" if @active_player.check
             piece = get_piece
             move = get_move(piece)
         end
@@ -421,7 +423,7 @@ class Game
     def get_move(piece)
         puts "Move #{@active_player.color} #{piece.class.to_s} to:"
         input = format(gets.strip)
-        until valid_move?(input, piece)
+        until valid_move?(piece, input)
             puts "Not a valid move for that piece, try again."
             input = format(gets.strip)
         end
