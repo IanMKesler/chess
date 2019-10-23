@@ -54,3 +54,16 @@ describe '#.load_game' do
         expect(File.exist?('save.txt')).to be false
     end
 end
+
+describe '#.set_player_color' do
+    it 'sets the opposite color to computer' do
+        self.stub(:gets).and_return("w", "b")
+        game = Game.new
+        set_player_color(game)
+        expect(game.player2.computer).to be true
+        game = Game.new
+        set_player_color(game)
+        expect(game.player1.computer).to be true
+    end
+end
+

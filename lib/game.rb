@@ -18,12 +18,31 @@ class Game
     def round
         reset_en_passant
         opponent_moves = construct_legal_moves(@inactive_player)
+        legal_moves = construct_legal_moves(@active_player)
         @active_player.check = check?(opponent_moves)
         puts "#{@active_player.color} is in check!" if @active_player.check
-        legal_moves = construct_legal_moves(@active_player)
-        if no_moves?(legal_moves)
-            return false
+        return false if no_moves?(legal_moves)
+        case @active_player.computer
+        when false
+            choice = player_round(legal_moves)
+        when true
+            choice = computer_round(legal_moves)
         end
+        return choice if choice.is_a?(String)
+        move(choice[0], choice[1])
+        @active_player, @inactive_player = @inactive_player, @active_player
+        return true
+    end
+
+    private 
+
+    def computer_round(legal_moves)
+        piece = random_piece(legal_moves)
+        space = random_move(legal_moves, piece)
+        return [piece,space]        
+    end
+
+    def player_round(legal_moves)
         puts "To quit at any time, input 'q'. To save and quit, input 's'"
         piece = get_piece
         return piece if piece.is_a?(String)
@@ -31,22 +50,28 @@ class Game
             puts "That piece can't move! Choose another."
             piece = get_piece
         end
-        move = get_move(piece, legal_moves)
-        return move if move.is_a?(String)
-        until legal_moves[piece].include?(move)
+        space = get_move(piece, legal_moves)
+        return space if space.is_a?(String)
+        until legal_moves[piece].include?(space)
             puts "That's an invalid move! Try again."
             puts "Your King is still in check!" if @active_player.check
             piece = get_piece
             return piece if save_quit?(piece)
-            move = get_move(piece)
-            return move if save_quit?(piece)
+            space = get_move(piece)
+            return space if save_quit?(piece)
         end
-        move(piece, move)
-        @active_player, @inactive_player = @inactive_player, @active_player
-        return true
+        return [piece,space]       
     end
 
-    private 
+    def random_piece(legal_moves)
+        pieces =legal_moves.select { |piece,moves| !moves.empty?}.keys
+        pieces.sample
+    end
+
+    def random_move(legal_moves, piece)
+        moves = legal_moves[piece]
+        moves.sample
+    end
 
     def reset_en_passant
         pawns = @active_player.pieces.select{ |piece| piece.class.name == 'Pawn'}

@@ -6,7 +6,7 @@ class Player
     require_relative "./queen"
     require_relative "./king"
 
-    attr_accessor :check, :checkmate, :pieces, :taken
+    attr_accessor :check, :checkmate, :pieces, :taken, :computer
     attr_reader :color
 
     def initialize(color)
@@ -28,6 +28,7 @@ class Player
         @check = false
         @checkmate = false
         @taken = []
+        @computer = false
     end
 
     def find_pieces(piece_name)

@@ -622,4 +622,22 @@ describe Game do
             expect(game.send(:save_quit?, "b3\n")).to be false
         end
     end
+
+    describe '#.random_piece' do
+        it 'selects a non empty piece' do
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            piece = game.send(:random_piece, legal_moves)
+            expect(legal_moves[piece].empty?).to be false
+        end
+    end
+
+    describe '#.random_move' do
+        it 'selects a move from the given pieces legal moves' do
+            legal_moves = game.send(:construct_legal_moves, game.active_player)
+            pawn = game.active_player.find_pieces("Pawn")[0]
+            random_move = game.send(:random_move, legal_moves, pawn)
+            valid_moves = legal_moves[pawn]
+            expect(valid_moves.include?(random_move)).to be true
+        end
+    end
 end

@@ -76,12 +76,42 @@ def create_game
         game = load_game if yes?(get_load)
     else
         game = Game.new
+        set_computer(game)
     end
     game
 end
 
+def set_computer(game)
+    puts "Would you like to play against the (c)omputer or a (h)uman?"
+    response = gets.strip
+    until response.match(/\A[CcHh]\z/)
+        puts "Please input 'c' to play against the computer, or 'h' to play against another human."
+        response = gets.strip
+    end
+    if response.match(/\A[Cc]\z/)
+        set_player_color(game)   
+    end
+end
+
+def set_player_color(game)
+    puts "Would you like to play as (w)hite or (b)lack?"
+    response = gets.strip
+    until response.match(/\A[WwBb]\z/)
+        puts "Input 'w' for white or 'b' for black."
+        response = gets.strip
+    end
+    if response.match(/\A[Ww]\z/)
+        puts "You're now white."
+        game.player2.computer = true
+    else
+        puts "You're now black."
+        game.player1.computer = true
+    end
+end
+
 puts "Welcome to Chess!"
 game = create_game
+
 ended = play_game(game)
 while ended
     if yes?(get_continue)
