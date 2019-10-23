@@ -7,7 +7,6 @@ def play_game(game)
     state = game.round
     while state == true
         game.board.show
-        puts "#{game.active_player} is in check!" if game.active_player.check
         state = game.round
     end
     if state.is_a?(String)

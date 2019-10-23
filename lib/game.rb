@@ -19,6 +19,7 @@ class Game
         reset_en_passant
         opponent_moves = construct_legal_moves(@inactive_player)
         @active_player.check = check?(opponent_moves)
+        puts "#{@active_player.color} is in check!" if @active_player.check
         legal_moves = construct_legal_moves(@active_player)
         if no_moves?(legal_moves)
             return false
@@ -30,7 +31,7 @@ class Game
             puts "That piece can't move! Choose another."
             piece = get_piece
         end
-        move = get_move(piece)
+        move = get_move(piece, legal_moves)
         return move if move.is_a?(String)
         until legal_moves[piece].include?(move)
             puts "That's an invalid move! Try again."
@@ -428,11 +429,11 @@ class Game
         end
     end
 
-    def get_move(piece)
+    def get_move(piece, legal_moves)
         puts "Move #{@active_player.color} #{piece.class.to_s} to:"
         input = format(gets.strip)
         return input unless input.is_a?(Array)
-        until valid_move?(piece, input)
+        until legal_moves[piece].include?(input)
             puts "Not a valid move for that piece, try again."
             input = format(gets.strip)
         end
