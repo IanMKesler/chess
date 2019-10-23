@@ -1,7 +1,7 @@
 require_relative "../lib/game"
 describe Game do
     before do
-        #allow($stdout).to receive(:write)
+        allow($stdout).to receive(:write)
     end
 
     game = Game.new
@@ -14,6 +14,13 @@ describe Game do
         it 'asks again for an invalid input' do
             game.stub(:gets).and_return(" b\n", " 7\n")
             expect(game.send(:format,"Ab97")).to eql([1,1])            
+        end
+
+        it 'returns input if given "q" or "s"' do
+            inputs = ["q", "s"]
+            inputs.each do |input|
+                expect(game.send(:format,input)).to eql(input)
+            end
         end
     end
 
@@ -42,6 +49,14 @@ describe Game do
             game.stub(:gets).and_return("a7\n", "b3\n", "f2\n")
             #game.board.show
             expect(game.send(:get_piece).class.to_s).to eql("Pawn")
+        end
+
+        it 'returns input if given "q" or "s"' do
+            game.stub(:gets).and_return("q", "s")
+            inputs = ["q", "s"]
+            inputs.each do |input|
+                expect(game.send(:get_piece)).to eql(input)
+            end
         end
     end
 
@@ -594,5 +609,17 @@ describe Game do
         end
     end
 
+    describe '#.save_quit?' do
+        it 'returns true if given s or q' do
+            inputs = ["S", "s", "Q", "q"]
+            inputs.each do |input|
+                expect(game.send(:save_quit?, input)).to be true
+            end
 
+        end
+
+        it 'returns false otherwise' do
+            expect(game.send(:save_quit?, "b3\n")).to be false
+        end
+    end
 end

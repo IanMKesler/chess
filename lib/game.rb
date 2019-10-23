@@ -23,14 +23,22 @@ class Game
         if no_moves?(legal_moves)
             return false
         end
-        @board.show
+        puts "To quit at any time, input 'q'. To save and quit, input 's'"
         piece = get_piece
+        return piece if piece.is_a?(String)
+        while legal_moves[piece].empty?
+            puts "That piece can't move! Choose another."
+            piece = get_piece
+        end
         move = get_move(piece)
+        return move if move.is_a?(String)
         until legal_moves[piece].include?(move)
             puts "That's an invalid move! Try again."
             puts "Your King is still in check!" if @active_player.check
             piece = get_piece
+            return piece if save_quit?(piece)
             move = get_move(piece)
+            return move if save_quit?(piece)
         end
         move(piece, move)
         @active_player, @inactive_player = @inactive_player, @active_player
@@ -423,6 +431,7 @@ class Game
     def get_move(piece)
         puts "Move #{@active_player.color} #{piece.class.to_s} to:"
         input = format(gets.strip)
+        return input unless input.is_a?(Array)
         until valid_move?(piece, input)
             puts "Not a valid move for that piece, try again."
             input = format(gets.strip)
@@ -447,6 +456,7 @@ class Game
     def get_piece
         puts "#{@active_player.color}: Select piece"
         input = format(gets.strip)
+        return input unless input.is_a?(Array)
         until correct_piece?(input)
             puts "Please select a #{@active_player.color} piece on the board."
             input = format(gets.strip)
@@ -459,7 +469,12 @@ class Game
         @active_player.pieces.include?(piece)
     end
 
+    def save_quit?(input)
+        return input.match(/\A[QqSs]\z/) ? true : false
+    end
+
     def format(input)
+        return input if save_quit?(input)
         split= input.downcase.split("")
         column = split.select { |char| char.match(/[a-h]/)}.flatten
         row = split.select { |num| num.match(/[1-8]/)}.flatten
