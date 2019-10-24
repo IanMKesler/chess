@@ -85,6 +85,7 @@ describe Game do
             game.send(:move, game.active_player.pieces[6],[5,1])
             expect(game.send(:valid_move?, game.active_player.pieces[0], [2,0])).to be true
             game.send(:unmove, game.active_player.pieces[6])
+            
         end 
 
         it 'returns false if not in piece.valid_moves' do
@@ -107,7 +108,8 @@ describe Game do
             game.send(:move, game.inactive_player.pieces[6],[6,3])
             opponent_moves = game.send(:construct_legal_moves, game.inactive_player)
             expect(game.send(:check?, opponent_moves)).to be true
-            game.send(:unmove, game.inactive_player.pieces[6])   
+            game.send(:unmove, game.inactive_player.pieces[6])
+            
                      
         end
 
@@ -127,7 +129,7 @@ describe Game do
         it 'returns a shortened lane if blocked' do
             lane = game.player1.find_piece([7,0]).valid_moves[0]
             expect(game.send(:modified_lane, game.player1.color,lane)).to eql([])
-
+            
             pawn1 = game.player1.find_piece([6,0])
             pawn2 = game.player2.find_piece([1,0])
             game.send(:move, pawn1, [5,1])
@@ -604,7 +606,7 @@ describe Game do
         it 're-requests a move if the move is invalid' do
             game.stub(:gets).and_return("c1\n", "h4\n", "h6\n")
             game.round
-            game.board.show
+            #game.board.show
             expect(game.active_player).to eql(game.player2)
         end
     end

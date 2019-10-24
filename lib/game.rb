@@ -45,13 +45,14 @@ class Game
     def player_round(legal_moves)
         puts "To quit at any time, input 'q'. To save and quit, input 's'"
         piece = get_piece
-        return piece if piece.is_a?(String)
+        return piece if save_quit?(piece)
         while legal_moves[piece].empty?
             puts "That piece can't move! Choose another."
             piece = get_piece
+            return piece if save_quit?(piece)
         end
         space = get_move(piece, legal_moves)
-        return space if space.is_a?(String)
+        return space if save_quit?(space)
         until legal_moves[piece].include?(space)
             puts "That's an invalid move! Try again."
             puts "Your King is still in check!" if @active_player.check
@@ -74,7 +75,7 @@ class Game
     end
 
     def reset_en_passant
-        pawns = @active_player.pieces.select{ |piece| piece.class.name == 'Pawn'}
+        pawns = @active_player.find_pieces("Pawn")
         pawns.each do |pawn|
             pawn.en_passant = false
         end
@@ -102,11 +103,7 @@ class Game
     end
 
     def en_passant?(pawn, opponent)
-        if opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
-            return true
-        else
-            return false
-        end
+        opponent.class.name == 'Pawn' && opponent.color != pawn.color && opponent.en_passant
     end
 
     def add_en_passant(legal_moves)
@@ -128,58 +125,67 @@ class Game
         legal_moves
     end
 
+    def castle_side(king, rook)
+        king.position[1] > rook.position[1] ? 'Queen' : 'King' 
+    end
+
 
     def castle_move(king, rook)
-        row= king.position[0]
-        case king.position[1] > rook.position[1]
-        when true #Queen-side
+        row = king.position[0]
+        side = castle_side(king, rook)
+        case side
+        when 'Queen'
             return [row, 2]
-        when false #King-side
+        when 'King'
             return [row, 6]
         end
     end
 
+    def castle_clear?(row, columns)
+        columns.each do |column|
+            return false if @board.field[row][column]
+        end
+        return true
+    end
+
+    def castle_threatened?(king, row, columns)
+        columns.each do |column|
+            move(king, [row,column])
+            opponent_moves = construct_legal_moves(@inactive_player)
+            threatened = check?(opponent_moves)
+            unmove(king)
+            return true if threatened
+        end
+        return false
+    end
+
+    def construct_castle_columns(king, rook)
+        side = castle_side(king, rook)
+        case side
+        when 'Queen' 
+            between = (rook.position[1]+1...king.position[1]).to_a
+            king_moves = between[-2..-1]
+        when 'King' 
+            between = (king.position[1]+1...rook.position[1]).to_a
+            king_moves = between[0..1]
+        end
+        [between, king_moves]
+    end
+
     def castle?(king, rook)
         row = king.position[0]
-        case king.position[1] > rook.position[1]
-        when true #Queen-side
-            between = (rook.position[1]+1...king.position[1]).to_a
-            between.each do |column|
-                return false if @board.field[row][column]
-            end
-            king_moves = between[-2..-1]
-            king_moves.each do |column|
-                move(king, [row,column])
-                opponent_moves = construct_legal_moves(@inactive_player)
-                threatened = check?(opponent_moves)
-                unmove(king)
-                return false if threatened
-            end
-            return true
-        when false #King-side
-            between = (king.position[1]+1...rook.position[1]).to_a
-            between.each do |column|
-                return false if @board.field[row][column]
-            end
-            king_moves = between[0..1]
-            king_moves.each do |column|
-                move(king, [row,column])
-                opponent_moves = construct_legal_moves(@inactive_player)
-                valid = check?(opponent_moves)
-                unmove(king)
-                return false if valid
-            end
-            return true
-        end
+        parameters = construct_castle_columns(king, rook)
+        between = parameters[0]
+        king_moves = parameters[1]
+        valid = castle_clear?(row, between) && !castle_threatened?(king, row, king_moves)
     end
 
     def add_castles(legal_moves)
         castles = []
         king = @active_player.find_pieces("King")
         rooks = @active_player.find_pieces("Rook")
-        if king.moved || rooks.select{ |rook| rook.moved == false}.length == 0
-            return legal_moves
-        end
+        disqualified = king.moved || rooks.select{ |rook| rook.moved == false}.length == 0
+        return legal_moves if disqualified
         rooks.each do |rook|
             castles << castle_move(king, rook) if castle?(king, rook)
         end 
@@ -187,64 +193,69 @@ class Game
         legal_moves
     end
 
+    def non_check_moves(piece, moves)
+        moves.select { |space|
+            move(piece,space)
+            opponent_moves = construct_legal_moves(@inactive_player)
+            valid = check?(opponent_moves) ? false : true
+            unmove(piece)
+            valid
+        }
+    end
 
     def remove_check_moves(legal_moves)
-        legal_moves.each do |piece, moves|
-            moves.select! { |space|
-                move(piece,space)
-                opponent_moves = construct_legal_moves(@inactive_player)
-                valid = check?(opponent_moves) ? false : true
-                unmove(piece)
-                valid
-            }
-            legal_moves[piece] = moves
+        legal_moves.map { |piece, moves|
+            [piece, non_check_moves(piece, moves)]
+        }.to_h
+    end
+
+    def pawn_takes(pawn)
+        takes = []
+        pawn.valid_takes.each do |take|
+            opponent = @board.field[take[0]][take[1]]
+            if opponent && opponent.color != pawn.color
+                takes << take
+            end
         end
-        legal_moves
+        takes
     end
 
     def add_pawn_takes(legal_moves)
-        pawns = legal_moves.select { |piece, moves|
-            piece.class.name == "Pawn"
-        }
-        pawns.each do |pawn, moves|
-            pawn.valid_takes.each do |take|
-                opponent = @board.field[take[0]][take[1]]
-                if opponent && opponent.color != pawn.color
-                    legal_moves[pawn] << take
-                end
-            end
+        legal_moves.map {|piece, moves|
+            is_pawn = piece.class.name == "Pawn" 
+            new_moves = is_pawn ? moves + pawn_takes(piece) : moves
+            [piece, new_moves]
+        }.to_h
+    end
+
+    def open_spaces(piece, moves)
+        type = piece.class.superclass.name
+        case type
+        when "Slider"
+            new_moves = moves.map { |lane|
+                modified_lane(piece.color, lane)
+            }.flatten(1)
+        when "Piece"
+            open = true
+            new_moves = moves.select { |space|
+                open = false if @board.field[space[0]][space[1]]
+                open
+            }
+        when "Jumper"
+            new_moves = moves.select { |space|
+                occupant = @board.field[space[0]][space[1]]
+                occupied = occupant && occupant.color == piece.color
+                !occupied
+            }
         end
-        legal_moves
+        new_moves
     end
 
     def remove_blocks(legal_moves)
-        legal_moves.each { |piece, moves|
-            type = piece.class.superclass.name
-            case type
-            when "Slider"
-                moves.map! do |lane|
-                    modified_lane(piece.color, lane)
-                end
-                legal_moves[piece] = moves.flatten(1)
-            when "Piece"
-                valid = true
-                moves.select! { |space|
-                    valid = false if @board.field[space[0]][space[1]]
-                    valid
-                }
-                legal_moves[piece] = moves
-            else 
-                moves.select! { |space|
-                    valid = true
-                    occupant = @board.field[space[0]][space[1]]
-                    if occupant && occupant.color == piece.color
-                        valid = false
-                    end
-                    valid
-                }
-                legal_moves[piece] = moves
-            end
-        }
+        legal_moves.map { |piece, moves|
+            new_moves = open_spaces(piece, moves)
+            [piece, new_moves]
+        }.to_h
     end
 
     def modified_lane(color,lane)
@@ -496,7 +507,8 @@ class Game
     end
 
     def save_quit?(input)
-        return input.match(/\A[QqSs]\z/) ? true : false
+        return false unless input.is_a?(String)
+        return input.match(/\A[QqSs]\z/) ? true : false 
     end
 
     def format(input)
