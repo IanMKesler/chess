@@ -1,4 +1,5 @@
 require_relative "../lib/game"
+
 describe Game do
     before do
         allow($stdout).to receive(:write)
@@ -75,29 +76,7 @@ describe Game do
         end
     end
 
-    describe '#.valid_move?' do
-        it 'returns true for a valid move for jumper' do
-            expect(game.send(:valid_move?, game.active_player.pieces[6], [4,0])).to be true
-            expect(game.send(:valid_move?, game.active_player.pieces[6], [5,0])).to be true
-        end
-
-        it 'returns true for a valid move for slider' do
-            game.send(:move, game.active_player.pieces[6],[5,1])
-            expect(game.send(:valid_move?, game.active_player.pieces[0], [2,0])).to be true
-            game.send(:unmove, game.active_player.pieces[6])
-            
-        end 
-
-        it 'returns false if not in piece.valid_moves' do
-            expect(game.send(:valid_move?, game.active_player.pieces[6], [0,4])).to be false
-        end
-
-        it 'returns false for a blocked slider' do
-            expect(game.send(:valid_move?, game.active_player.pieces[0], [5,0])).to be false
-        end
-    end
-
-    describe "#.check?" do
+    describe "#.check?"  do
         it 'returns false if active_player is safe' do
             opponent_moves = game.send(:construct_legal_moves, game.inactive_player)
             expect(game.send(:check?, opponent_moves)).to be false

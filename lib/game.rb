@@ -261,11 +261,12 @@ class Game
     def modified_lane(color,lane)
         lane.each_with_index do |position, index|
             if @board.field[position[0]][position[1]]
-                case @board.field[position[0]][position[1]].color
-                when color
+                same_side = @board.field[position[0]][position[1]].color == color
+                case same_side
+                when true
                     lane = lane[0...index]
                     break
-                else
+                when false
                     lane = lane[0..index]
                     break
                 end
@@ -430,73 +431,39 @@ class Game
         set_board
     end
 
-    def valid_take?(piece, position)
-        return piece.valid_takes.include?(position) ? true : false
-    end
-
-    def valid_move?(piece, position)
-        type = piece.class.superclass.name
-        case type
-        when "Slider"
-            lane = piece.valid_moves.select { |lane| lane.include?(position)}.flatten(1)
-            lane.each_with_index do |position, index|
-                if @board.field[position[0]][position[1]]
-                    case @board.field[position[0]][position[1]].color
-                    when piece.color
-                        lane = lane[0...index]
-                        break
-                    else
-                        lane = lane[0..index]
-                        break
-                    end
-                end
-            end
-            return lane.include?(position) ? true : false
-        else 
-            moves = piece.valid_moves.select { |space|
-                valid = true
-                occupant = @board.field[space[0]][space[1]]
-                if occupant && occupant.color == piece.color
-                    valid = false
-                end
-                valid
-            }
-            return moves.include?(position) ? true : false
-        end
-    end
-
     def get_move(piece, legal_moves)
         puts "Move #{@active_player.color} #{piece.class.to_s} to:"
         input = format(gets.strip)
-        return input unless input.is_a?(Array)
+        return input if save_quit?(input)
         until legal_moves[piece].include?(input)
             puts "Not a valid move for that piece, try again."
             input = format(gets.strip)
+            return input if save_quit?(input)
         end
         input
     end
 
+    def set_player(player)
+        player.pieces.each do |piece|
+            row = piece.position[0]
+            column = piece.position[1]
+            @board.field[row][column] = piece
+        end
+    end
+
     def set_board
-        @player1.pieces.each do |piece|
-            row = piece.position[0]
-            column = piece.position[1]
-            @board.field[row][column] = piece
-        end
-        @player2.pieces.each do |piece|
-            row = piece.position[0]
-            column = piece.position[1]
-            @board.field[row][column] = piece
-        end
-        
+        set_player(@player1)
+        set_player(@player2)
     end
 
     def get_piece
         puts "#{@active_player.color}: Select piece"
         input = format(gets.strip)
-        return input unless input.is_a?(Array)
+        return input if save_quit?(input)
         until correct_piece?(input)
             puts "Please select a #{@active_player.color} piece on the board."
             input = format(gets.strip)
+            return input if save_quit?(input)
         end
         @board.field[input[0]][input[1]]
     end
@@ -513,16 +480,18 @@ class Game
 
     def format(input)
         return input if save_quit?(input)
-        split= input.downcase.split("")
+        split = input.downcase.split("")
         column = split.select { |char| char.match(/[a-h]/)}.flatten
         row = split.select { |num| num.match(/[1-8]/)}.flatten
         until column.length == 1
             puts "Which column did you mean? [a-h]"
             column = gets.strip.downcase.split("").select {|char| char.match(/[a-h]/)}.flatten
+            return column if save_quit?(column)
         end
         until row.length == 1
             puts "Which row did you mean? [1-8]"
             row = gets.strip.downcase.split("").select {|num| num.match(/[1-8]/)}.flatten
+            return row if save_quit?(row)
         end
         output = [7-(row[0].to_i-1),board.column_reference.key(column[0])]
         output
