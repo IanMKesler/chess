@@ -349,87 +349,110 @@ class Game
     end
 
     def move(piece, new_position)
-        old_position = piece.position
-        state = [piece.dup]
-        @board.field[old_position[0]][old_position[1]] = nil     
+        old_piece = piece.dup
         taken_piece = @board.field[new_position[0]][new_position[1]]
+        old_position = piece.position
+        @board.field[old_position[0]][old_position[1]] = nil     
         if piece.class.name == "King" && piece.moved == false
-            #move rook for castle
-            case piece.color
-            when 'white'
-                case new_position
-                when [7,2]
-                    castle = @board.field[7][0]
-                    pre_castle = castle.dup
-                    castle.move([7,3])
-                    post_castle = castle
-                    @board.field[7][0] = nil
-                when [7,6]
-                    castle = @board.field[7][7]
-                    pre_castle = castle.dup
-                    castle.move([7,5])
-                    post_castle = castle
-                    @board.field[7][7] = nil
-                end
-            when 'black'
-                case new_position
-                when [0,2]
-                    castle = @board.field[0][0]
-                    pre_castle = castle.dup
-                    castle.move([0,3])
-                    post_castle = castle
-                    @board.field[0][0] = nil
-                when [0,6]
-                    castle = @board.field[0][7]
-                    pre_castle = castle.dup
-                    castle.move([0,5])
-                    post_castle = castle
-                    @board.field[0][7] = nil
-                end
-            end
+            castle_states = move_castle(piece, new_position)
         end
         if piece.class.name == 'Pawn'
-            #en_passant_take
             if piece.valid_takes.include?(new_position)
-                en_passant_positions = [[old_position[0], old_position[1]-1], [old_position[0], old_position[1]+1]]
-                en_passant_positions.each do |position|
-                    opponent = @board.field[position[0]][position[1]] 
-                    if opponent && en_passant?(piece,opponent)
-                        taken_piece = opponent
-                        @board.field[position[0]][position[1]] = nil
-                    end
-                end
+                taken_piece = en_passant_take(old_position, piece, taken_piece)
             end
-            #set_en_passant
-            case piece.color
-            when 'white'
-                piece.en_passant = piece.position[0]-2 == new_position[0] ? true : false
-            when 'black'
-                piece.en_passant = piece.position[0]+2 == new_position[0] ? true : false
-            end
+            set_en_passant(piece, new_position)
         end
-        state << taken_piece.dup
         piece.move(new_position)
-        state << piece
-        if pre_castle
-            state << pre_castle
-            state << post_castle
-        end
+        new_piece = piece
+        state = construct_state(old_piece, taken_piece, new_piece, castle_states)
         @state << state
-        taken_piece.moved = true if taken_piece
         if taken_piece
-            case taken_piece.color
-            when 'white'
-                @player1.taken << taken_piece
-                @player1.pieces.delete(taken_piece)
-            when 'black'
-                @player2.taken << taken_piece
-                @player2.pieces.delete(taken_piece)
-            end
+            take_piece(taken_piece)
         end
-        
         set_board
     end
+
+    def take_piece(taken_piece)
+        taken_piece.moved = true
+        case taken_piece.color
+        when 'white'
+            @player1.taken << taken_piece
+            @player1.pieces.delete(taken_piece)
+        when 'black'
+            @player2.taken << taken_piece
+            @player2.pieces.delete(taken_piece)
+        end
+    end
+
+    def set_en_passant(piece, new_position)
+        case piece.color
+        when 'white'
+            piece.en_passant = piece.position[0]-2 == new_position[0] ? true : false
+        when 'black'
+            piece.en_passant = piece.position[0]+2 == new_position[0] ? true : false
+        end
+    end
+
+    def en_passant_take(old_position, piece, taken_piece)
+        en_passant_positions = [[old_position[0], old_position[1]-1], [old_position[0], old_position[1]+1]]
+        en_passant_positions.each do |position|
+            opponent = @board.field[position[0]][position[1]] 
+            if opponent && en_passant?(piece,opponent)
+                taken_piece = opponent
+                @board.field[position[0]][position[1]] = nil
+            end
+        end
+        taken_piece
+    end
+
+    def construct_state(old_piece, taken_piece, new_piece, castle_states)
+        state = [old_piece, taken_piece.dup, new_piece]
+        state << castle_states if castle_states
+        state.flatten(1)
+    end
+
+    def move_castle(king, new_position)
+        pre_castle = nil
+        post_castle = nil
+        case king.color
+        when 'white'
+            case new_position
+            when [7,2]
+                castle = @board.field[7][0]
+                pre_castle = castle.dup
+                castle.move([7,3])
+                post_castle = castle
+                @board.field[7][0] = nil
+            when [7,6]
+                castle = @board.field[7][7]
+                pre_castle = castle.dup
+                castle.move([7,5])
+                post_castle = castle
+                @board.field[7][7] = nil
+            else
+                return false
+            end
+        when 'black'
+            case new_position
+            when [0,2]
+                castle = @board.field[0][0]
+                pre_castle = castle.dup
+                castle.move([0,3])
+                post_castle = castle
+                @board.field[0][0] = nil
+            when [0,6]
+                castle = @board.field[0][7]
+                pre_castle = castle.dup
+                castle.move([0,5])
+                post_castle = castle
+                @board.field[0][7] = nil
+            else
+                return false
+            end
+        end
+        return [pre_castle, post_castle]
+    end
+
 
     def get_move(piece, legal_moves)
         puts "Move #{@active_player.color} #{piece.class.to_s} to:"
