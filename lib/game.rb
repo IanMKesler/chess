@@ -286,28 +286,43 @@ class Game
     end
 
     def unmove(post_move_piece)
-        state = @state.select { |state| 
-            state[2] == post_move_piece
-        }[-1]
-        return false if state.empty? #throws error nil.empty?
+        state = select_state(post_move_piece)
+        return false unless state
         pre_move_piece = state[0]
         taken_piece = state[1]
-
         if taken_piece
-            case taken_piece.color
-            when 'white'
-                @player1.taken[-1].moved = taken_piece.moved
-                @player1.pieces << @player1.taken.pop
-            when 'black'
-                @player2.taken[-1].moved = taken_piece.moved
-                @player2.pieces << @player2.taken.pop
-            end
+            untake_piece(taken_piece)
         end
-        
-
         post_position = post_move_piece.position
         @board.field[post_position[0]][post_position[1]] = nil
+        unmove_piece(post_move_piece, pre_move_piece)
+        if state.length == 5
+            pre_castle = state[3]
+            post_castle = state[4]
+            uncastle(post_castle, pre_castle)
+        end
+        set_board 
+        @state.delete(state)
+    end
 
+    def uncastle(post_castle, pre_castle)
+        post_position = post_castle.position
+        @board.field[post_position[0]][post_position[1]] = nil
+        case post_castle.color
+        when 'white'
+            index = @player1.pieces.index(post_castle)
+            piece = @player1.pieces[index]
+            piece.position = pre_castle.position
+            piece.moved = pre_castle.moved
+        when 'black'
+            index = @player2.pieces.index(post_castle)
+            piece = @player2.pieces[index]
+            piece.position = pre_castle.position
+            piece.moved = pre_castle.moved
+        end
+    end
+
+    def unmove_piece(post_move_piece, pre_move_piece)
         case post_move_piece.color
         when 'white'
             index = @player1.pieces.index(post_move_piece)
@@ -320,32 +335,23 @@ class Game
             piece.position = pre_move_piece.position
             piece.moved = pre_move_piece.moved
         end
+    end
 
-        #unmove rook for castle
-        if state.length == 5
-            pre_castle = state[3]
-            post_castle = state[4]
-
-            post_position = post_castle.position
-
-            @board.field[post_position[0]][post_position[1]] = nil
-
-            case post_castle.color
-            when 'white'
-                index = @player1.pieces.index(post_castle)
-                piece = @player1.pieces[index]
-                piece.position = pre_castle.position
-                piece.moved = pre_castle.moved
-            when 'black'
-                index = @player2.pieces.index(post_castle)
-                piece = @player2.pieces[index]
-                piece.position = pre_castle.position
-                piece.moved = pre_castle.moved
-            end
+    def untake_piece(taken_piece)
+        case taken_piece.color
+        when 'white'
+            @player1.taken[-1].moved = taken_piece.moved
+            @player1.pieces << @player1.taken.pop
+        when 'black'
+            @player2.taken[-1].moved = taken_piece.moved
+            @player2.pieces << @player2.taken.pop
         end
+    end
 
-        set_board 
-        @state.delete(state)
+    def select_state(post_move_piece)
+        @state.select { |state| 
+            state[2] == post_move_piece
+        }[-1]
     end
 
     def move(piece, new_position)
