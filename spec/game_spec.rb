@@ -621,4 +621,36 @@ describe Game do
             expect(valid_moves.include?(random_move)).to be true
         end
     end
+
+    describe '#.promote' do
+        it 'promotes the pawn with the selected piece from player' do
+            pawns = game.active_player.find_pieces('Pawn')
+            game.stub(:gets).and_return('Q', 'R', 'B', 'K')
+            4.times do |i|
+                game.send(:promote, pawns[i])
+            end
+            positions = []
+            pawns[0..3].each do |pawn|
+                positions << pawn.position
+            end
+            expect(game.active_player.find_piece(positions[0]).class.name).to eql('Queen')
+            expect(game.active_player.find_piece(positions[1]).class.name).to eql('Rook')
+            expect(game.active_player.find_piece(positions[2]).class.name).to eql('Bishop')
+            expect(game.active_player.find_piece(positions[3]).class.name).to eql('Knight')
+        end
+
+        it 'promotes the pawn to a random piece from computer' do
+            game.active_player, game.inactive_player = game.inactive_player, game.active_player
+            game.active_player.computer = true
+            pawns = game.active_player.find_pieces('Pawn')
+            pawns.each do |pawn|
+                game.send(:promote, pawn)
+            end
+            game.active_player.pieces[-1..-8].each do |piece|
+                type = piece.class.name
+                promoted = type == 'Queen' || type == 'Rook' || type == 'Bishop' || type == 'Knight'
+                expect(promoted).to be true
+            end
+        end
+    end
 end

@@ -28,13 +28,83 @@ class Game
         when true
             choice = computer_round(legal_moves)
         end
-        return choice if choice.is_a?(String)
+        return choice if save_quit?(choice)
         move(choice[0], choice[1])
+        promote(choice[0]) if promote?(choice[0])
         @active_player, @inactive_player = @inactive_player, @active_player
         return true
     end
 
     private 
+
+    def promote(pawn)
+        @active_player.taken << pawn
+        @active_player.pieces.delete(pawn)
+        case @active_player.computer
+        when false
+            type = get_promotion
+        when true
+            type = random_promotion
+        end
+        position = pawn.position
+        @active_player.pieces << add_piece(type, position)
+        set_board
+    end
+
+    def get_promotion
+        puts "Promoting Pawn: (Q)ueen, (R)ook, (B)ishop, or (K)night?"
+        response = gets.strip.upcase
+        until response.match(/\A[QRBK]\z/)
+            puts "Enter 'Q', 'R', 'B' or 'K'"
+            response = gets.strip.upcase
+        end
+        response
+    end
+
+    def add_piece(response, position)
+        color = @active_player.color
+        case response
+        when 'Q'
+            piece = Queen.new(color)
+        when 'R'
+            piece = Rook.new(color)
+        when 'B'
+            piece = Bishop.new(color)
+        when 'K'
+            piece = Knight.new(color)
+        end
+        piece.position = position
+        piece
+    end
+
+    def random_promotion
+        random = rand(3)
+        case random
+        when 0
+            return 'Q'
+        when 1
+            return 'R'
+        when 2
+            return 'B'
+        when 3
+            return 'K'
+        end
+    end
+
+    def promote?(piece)
+        return false unless piece.class.name == 'Pawn'
+        case piece.color
+        when 'white'
+            if piece.position[0] == 0
+                return true
+            end
+        when 'black'
+            if piece.position[0] == 7
+                return true
+            end
+        end
+        return false
+    end
 
     def computer_round(legal_moves)
         piece = random_piece(legal_moves)
